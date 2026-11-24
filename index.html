@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Плоттер-Редактор PRO (Jinqian GRBL 1.1f)</title>
+    <style>
+        :root {
+            --bg-main: #0c0d14;
+            --bg-panel: #151722;
+            --bg-card: #1c1f2e;
+            --bg-input: #10121a;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-glow: rgba(79, 70, 229, 0.35);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #282d42;
+            --border-focus: #6366f1;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- TOP HEADER --- */
+        .top-nav {
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .brand-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+        .brand-badge span {
+            background: linear-gradient(135deg, #6366f1, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .grbl-tag {
+            font-size: 10px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #818cf8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .quick-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- WORD-STYLE TOP RIBBON BAR --- */
+        .ribbon-bar {
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 8px 14px;
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+            overflow-x: auto;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            z-index: 90;
+        }
+
+        .ribbon-group {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 6px 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .ribbon-group-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 4px;
+            gap: 8px;
+        }
+
+        .ribbon-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-labeled {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .input-labeled label {
+            font-size: 9px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            font-weight: 600;
+        }
+
+        /* Margin mini-box */
+        .margin-inputs {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-input);
+            padding: 2px 4px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+        .margin-inputs span {
+            font-size: 9px;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        /* Seed badge animation */
+        .seed-badge {
+            font-size: 10px;
+            font-weight: 700;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #a5b4fc;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-variant-numeric: tabular-nums;
+        }
+        .seed-badge.pulse {
+            transform: scale(1.1);
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* --- FORM CONTROLS & BUTTONS --- */
+        input[type="text"], input[type="number"], select, textarea {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            font-size: 12px;
+            outline: none;
+            transition: all 0.15s ease;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        input[type="range"] {
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .btn-ui {
+            padding: 5px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .btn-ui:hover {
+            background: #252a3d;
+            border-color: #3e4663;
+        }
+        .btn-ui.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+            transition: transform 0.1s ease, filter 0.15s ease;
+        }
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-usb {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+        .btn-usb.connected {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        /* --- APP MAIN LAYOUT --- */
+        .app-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 350px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .sidebar-content {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .card-header {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        textarea#textInput {
+            width: 100%;
+            height: 220px;
+            padding: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+            resize: vertical;
+            user-select: text;
+        }
+
+        /* --- STATS CARD --- */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            font-size: 11px;
+        }
+        .stat-item {
+            background: var(--bg-input);
+            padding: 5px 8px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .stat-item span { color: var(--text-muted); display: block; font-size: 10px; }
+        .stat-item b { color: var(--text-main); font-size: 12px; }
+        .stat-highlight { color: #10b981 !important; font-weight: 700; }
+
+        /* --- WORKSPACE & CANVAS --- */
+        .workspace {
+            flex: 1;
+            background: radial-gradient(circle at center, #141622 0%, #0a0b10 100%);
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 30px;
+            position: relative;
+        }
+
+        .zoom-toolbar {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(21, 23, 34, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 5px 8px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            z-index: 50;
+        }
+
+        #paperWrapper {
+            position: relative;
+            background-color: #ffffff;
+            border-radius: 2px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
+            transform-origin: center top;
+            transition: transform 0.12s ease-out;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #svgFontInput { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- TOP HEADER -->
+    <div class="top-nav">
+        <div class="brand-badge">
+            <span>ПИСАЛКА</span>
+            <div class="grbl-tag">GRBL 1.1f</div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="btn-ui" id="btnToggleAir" onclick="toggleAirMoves()" title="Показать траектории холостого хода">👁 Траектории</button>
+            <button class="btn-ui" onclick="downloadCurrentPageSVG()" title="Экспорт страницы в векторный SVG">📐 SVG</button>
+            <button class="btn-primary" onclick="downloadCurrentPageGCode()" title="Скачать G-Code (.NC)">💾 Скачать .NC</button>
+            <button class="btn-usb" id="btnUsbSerial" onclick="toggleUSBConnection()" title="Прямая печать через Web Serial API">Подключить USB</button>
+            <button class="btn-primary" id="sendJob" onclick="sendJob()" disabled>Писать страницу</button>
+            <button class="btn-ui" id="holdJob" onclick="holdJob()" disabled>Пауза</button>
+            <span id="usbStatus" role="status" style="font-size:12px">USB отключён</span>
+        </div>
+    </div>
+
+    <!-- WORD-STYLE HORIZONTAL TOP RIBBON BAR -->
+    <div class="ribbon-bar">
+        
+        <!-- СЕКЦИЯ 1: ЛИСТ, РАЗМЕТКА И ПОЛЯ -->
+        <div class="ribbon-group">
+            <div class="ribbon-group-title">Лист и разметка</div>
+            <label>Поворот станка <select id="machineRotation" onchange="render()"><option value="90">90° вдоль Y</option><option value="0">0°</option><option value="-90">−90°</option><option value="180">180°</option></select></label>
+            <output id="machineBounds" style="display:block"></output>
+            <div class="ribbon-row">
+                <div class="input-labeled">
+                    <label>Лист</label>
+                    <select id="paperPreset" onchange="updatePaperSize()" style="min-width: 95px; padding: 3px 4px;">
+                        <option value="A4">A4 (210 x 297)</option>
+                        <option value="A5" selected>A5 (148 x 210)</option>
+                        <option value="A6">A6 (105 x 148)</option>
+                    </select>
+                </div>
+                <div class="input-labeled">
+                    <label>Ориентация</label>
+                    <select id="pageRotation" onchange="render()" style="min-width: 145px; padding: 3px 4px; font-weight: 700; color: #a5b4fc;">
+                        <option value="0" selected>⬆️ 0° (Все прямо)</option>
+                        <option value="auto_odd">🔄 Нечетные 180° (Тетрадь)</option>
+                        <option value="auto_even">🔄 Четные 180° (Тетрадь)</option>
+                        <option value="180">⬇️ 180° (Все вверх ногами)</option>
+                    </select>
+                </div>
+                <div class="input-labeled">
+                    <label>Разворот</label>
+                    <select id="pageSpread" onchange="render()" style="min-width: 115px; padding: 3px 4px;">
+                        <option value="auto" selected>📖 Авто (L/R)</option>
+                        <option value="right">📖 Правая</option>
+                        <option value="left">📖 Левая</option>
+                        <option value="single">📄 Одиночная</option>
+                    </select>
+                </div>
+                <div class="input-labeled">
+                    <label>Сетка</label>
+                    <select id="notebookStyle" onchange="render()" style="min-width: 110px; padding: 3px 4px;">
+                        <option value="grid5" selected>📐 Клетка (5 мм)</option>
+                        <option value="lines8">📝 Линейка (8 мм)</option>
+                        <option value="grid10">📏 Сетка (10 мм)</option>
+                        <option value="blank">⚪ Без линий</option>
+                    </select>
+                </div>
+                <div class="input-labeled">
+                    <label>Красная линия</label>
+                    <select id="redMarginMode" onchange="render()" style="min-width: 95px; padding: 3px 4px;">
+                        <option value="auto" selected>🔴 Авто</option>
+                        <option value="left">🔴 Слева</option>
+                        <option value="right">🔴 Справа</option>
+                        <option value="off">⚪ Отключить</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="ribbon-row">
+                <div class="input-labeled">
+                    <label>Поля страницы (мм)</label>
+                    <div class="margin-inputs">
+                        <span>L:</span>
+                        <input type="number" id="mLeft" value="15" title="Поле слева (мм)" style="width: 38px; padding: 2px 4px; text-align: center;" oninput="render()">
+                        <span>R:</span>
+                        <input type="number" id="mRight" value="15" title="Поле справа (мм)" style="width: 38px; padding: 2px 4px; text-align: center;" oninput="render()">
+                        <span>T:</span>
+                        <input type="number" id="mTop" value="20" title="Поле сверху (мм)" style="width: 38px; padding: 2px 4px; text-align: center;" oninput="render()">
+                        <span>B:</span>
+                        <input type="number" id="mBottom" value="20" title="Поле снизу (мм)" style="width: 38px; padding: 2px 4px; text-align: center;" oninput="render()">
+                    </div>
+                </div>
+                <div class="input-labeled">
+                    <label>Корешок (+мм)</label>
+                    <input type="number" id="gutterWidth" value="5" style="width: 55px; padding: 3px 6px;" oninput="render()">
+                </div>
+                <div class="input-labeled">
+                    <label>Абзац (мм)</label>
+                    <input type="number" id="paraIndent" value="10" style="width: 55px; padding: 3px 6px;" oninput="render()">
+                </div>
+            </div>
+        </div>
+
+        <!-- СЕКЦИЯ 2: ШРИФТ И ТИПОГРАФИКА -->
+        <div class="ribbon-group">
+            <div class="ribbon-group-title">
+                <span>🎛️ Шрифт & Сетка</span>
+                <div style="display: flex; gap: 4px;">
+                    <label>Почерк <select id="fontPreset" onchange="loadFontPreset(this.value)">
+                        <option value="">Встроенный</option><option value="handwritten">Рукописный</option><option value="van-dijk">Van Dijk · прописной</option>
+                    </select></label>
+                    <button class="btn-ui" style="padding: 2px 8px; font-size: 10px;" id="btnSvgFont" onclick="document.getElementById('svgFontInput').click()">📁 SVG Шрифт / лист</button>
+                    <button class="btn-ui" id="btnResetFont" style="display: none; padding: 2px 6px; font-size: 10px;" onclick="resetDefaultFont()" title="Сбросить шрифт">🔄</button>
+                </div>
+            </div>
+
+            <div class="ribbon-row">
+                <div class="input-labeled">
+                    <label>Высота (мм)</label>
+                    <input type="number" id="fontSize" value="5.0" step="0.5" min="2" max="25" style="width: 52px; padding: 3px 4px;" oninput="render()">
+                </div>
+                <div class="input-labeled">
+                    <label>Шаг строки</label>
+                    <input type="number" id="lineHeight" value="10.0" step="1" min="4" max="35" style="width: 52px; padding: 3px 4px;" oninput="render()">
+                </div>
+                <div class="input-labeled">
+                    <label>Интервал</label>
+                    <input type="number" id="letterSpacing" value="0.2" step="0.1" min="-0.5" max="2" style="width: 52px; padding: 3px 4px;" oninput="render()">
+                </div>
+                <div class="input-labeled">
+                    <label>Перо (мм)</label>
+                    <input type="number" id="penWidth" value="0.4" step="0.05" min="0.1" max="1.5" style="width: 52px; padding: 3px 4px;" oninput="render()">
+                </div>
+                <div class="input-labeled">
+                    <label>Выравнивание</label>
+                    <select id="textAlign" onchange="render()" style="min-width: 105px; padding: 3px 6px;">
+                        <option value="left" selected>⬅ По левому</option>
+                        <option value="justify">▤ По ширине</option>
+                        <option value="center">↔ По центру</option>
+                        <option value="right">➡ По правому</option>
+                    </select>
+                </div>
+                <div class="input-labeled">
+                    <label>Чернила</label>
+                    <select id="inkColor" onchange="render()" style="min-width: 105px; padding: 3px 6px;">
+                        <option value="#0033aa" selected>🔵 Синий</option>
+                        <option value="#111115">⚫ Черный</option>
+                        <option value="#b30000">🔴 Красный</option>
+                        <option value="#4b0082">🟣 Фиолетовый</option>
+                        <option value="#006622">🟢 Зеленый</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="ribbon-row" style="font-size: 11px;">
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                    <input type="checkbox" id="snapToGrid" checked onchange="render()"> В клетки
+                </label>
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; margin-left: 10px;">
+                    <input type="checkbox" id="smartSqueeze" checked onchange="render()"> Переносы & Вписывание
+                </label>
+            </div>
+            <input type="file" id="svgFontInput" accept=".svg" onchange="handleSVGFontUpload(event)">
+        </div>
+
+        <!-- СЕКЦИЯ 3: ЖИВОЙ ПОЧЕРК -->
+        <div class="ribbon-group">
+            <div class="ribbon-group-title">
+                <span>✍️ Живой почерк</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span id="seedBadge" class="seed-badge" title="Текущее зерно случайности почерка">🎲 #42817</span>
+                    <button class="btn-ui" style="padding: 2px 8px; font-size: 10px; background: var(--accent); color: #fff;" onclick="resetSeed()" title="Пересчитать случайные вариации">🎲 Вариация</button>
+                </div>
+            </div>
+
+            <div class="ribbon-row">
+                <div class="input-labeled">
+                    <label>Микро-тремор: <b id="jitterValLabel" style="color:#fff;">2</b></label>
+                    <input type="range" id="jitterIntensity" min="0" max="10" step="1" value="2" style="width: 85px;" oninput="updateJitterVal()">
+                </div>
+                <div class="input-labeled">
+                    <label>Наклон (°)</label>
+                    <input type="number" id="slantAngle" value="0" min="-20" max="30" style="width: 52px; padding: 3px 4px;" oninput="render()">
+                </div>
+                <div class="input-labeled">
+                    <label>Волна (мм)</label>
+                    <input type="number" id="waveIntensity" value="0.20" step="0.05" min="0" max="2" style="width: 52px; padding: 3px 4px;" oninput="render()">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MAIN APP LAYOUT -->
+    <div class="app-layout">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-content">
+                
+                <!-- ТЕКСТ И НАВИГАЦИЯ -->
+                <div class="card">
+                    <div class="card-header">
+                        <span>📝 Текст конспекта</span>
+                        <span id="charCountLabel" style="font-weight: 400; font-size: 10px; color: var(--text-muted);">0 симв.</span>
+                    </div>
+                    <textarea id="textInput" oninput="render()" placeholder="Введите текст...">Элемент времени!
+«Элемент времени» (англ. The Time Element) — шестой эпизод первого сезона.
+24 ноября 1958 года. (Test English & Cyrillic: Hello World! ! ? : ; ( ) " / + =)
+
+Второй абзац текста для демонстрации красной строки, выравнивания и интеллектуальной подгонки слов к полям. Плоттер Jinqian готов к идеальной работе!</textarea>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 2px;">
+                        <button class="btn-ui" style="padding: 4px 10px;" onclick="prevPage()">◀</button>
+                        <span id="pageIndicator" style="font-size: 11px; font-weight: 700; color: #fff;">Стр. 1 из 1</span>
+                        <button class="btn-ui" style="padding: 4px 10px;" onclick="nextPage()">▶</button>
+                        <button class="btn-ui" style="padding: 4px 10px;" onclick="downloadAllPagesGCode()" title="Скачать все страницы (.nc)">📦 Все .nc</button>
+                    </div>
+                </div>
+
+                <!-- НАСТРОЙКИ ЧПУ И СКОРОСТИ -->
+                <details class="card" style="cursor: pointer;">
+                    <summary class="card-header" style="outline: none;">⚙️ Настройки ЧПУ & Скорости</summary>
+                    <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px; cursor: default;">
+                        <div class="form-grid">
+                            <div><label style="font-size: 9px; color: var(--text-muted);">Письмо F (мм/мин)</label><input type="number" id="fDraw" value="1500" step="100" style="width: 100%; padding: 3px;" oninput="render()"></div>
+                            <div><label style="font-size: 9px; color: var(--text-muted);">Холостой F (мм/мин)</label><input type="number" id="fRapid" value="3000" step="200" style="width: 100%; padding: 3px;" oninput="render()"></div>
+                        </div>
+                        <div class="form-grid">
+                            <div><label style="font-size: 9px; color: var(--text-muted);">Z Подъем (воздух)</label><input type="number" id="zUp" value="-8" step="0.5" style="width: 100%; padding: 3px;" oninput="render()"></div>
+                            <div><label style="font-size: 9px; color: var(--text-muted);">Z Опускание (бумага)</label><input type="number" id="zDown" value="0" step="0.5" style="width: 100%; padding: 3px;" oninput="render()"></div>
+                        </div>
+                        <div class="form-grid">
+                            <div><label style="font-size: 9px; color: var(--text-muted);">Пауза (G4 P сек)</label><input type="number" id="dwellTime" value="0.0" step="0.05" style="width: 100%; padding: 3px;" oninput="render()"></div>
+                            <div>
+                                <label style="font-size: 9px; color: var(--text-muted);">Алгоритм TSP</label>
+                                <select id="tspMode" onchange="render()" style="width: 100%; padding: 3px;">
+                                    <option value="line" selected>Построчно</option>
+                                    <option value="global">Глобально</option>
+                                    <option value="none">Без TSP</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- ТЕЛЕМЕТРИЯ -->
+                <div class="card">
+                    <div class="card-header">📊 Статистика страницы</div>
+                    <div class="telemetry-grid">
+                        <div class="stat-item"><span>Символов</span><b id="statChars">0</b></div>
+                        <div class="stat-item"><span>Траекторий</span><b id="statPaths">0</b></div>
+                        <div class="stat-item"><span>Длина письма</span><b id="statDrawDist">0.00 м</b></div>
+                        <div class="stat-item"><span>Холостой ход</span><b id="statAirDist">0.00 м</b></div>
+                    </div>
+                    <div class="stat-item" style="margin-top: 2px;">
+                        <span>Примерное время печати</span>
+                        <b id="statTime" class="stat-highlight">~0 мин 0 сек</b>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- WORKSPACE -->
+        <div class="workspace">
+            <div id="paperWrapper">
+                <canvas id="canvas"></canvas>
+            </div>
+
+            <!-- ZOOM CONTROLS -->
+            <div class="zoom-toolbar">
+                <button class="btn-ui" style="padding: 4px 8px;" onclick="changeZoom(-0.15)">🔍 -</button>
+                <button class="btn-ui" style="padding: 4px 8px;" onclick="resetZoom()">100%</button>
+                <button class="btn-ui" style="padding: 4px 8px;" onclick="changeZoom(0.15)">🔍 +</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // High-Quality Single-Stroke Vector Font (Полный: Кириллица + Латиница + Цифры + Знаки)
+        const DEFAULT_FONT = {
+            // Заглавные русские
+            'А': [[[0,0],[0.4,1]], [[0.4,1],[0.8,0]], [[0.18,0.38],[0.62,0.38]]],
+            'Б': [[[0,0],[0,1]], [[0,1],[0.75,1]], [[0,0.52],[0.45,0.52],[0.72,0.4],[0.72,0.12],[0.5,0],[0,0]]],
+            'В': [[[0,0],[0,1]], [[0,1],[0.5,1],[0.7,0.85],[0.7,0.6],[0.5,0.52],[0,0.52]], [[0,0.52],[0.52,0.52],[0.75,0.38],[0.75,0.14],[0.5,0],[0,0]]],
+            'Г': [[[0,0],[0,1]], [[0,1],[0.7,1]]],
+            'Д': [[[0.15,0.18],[0.25,0.85],[0.55,0.85],[0.65,0.18]], [[0,0.18],[0.8,0.18]], [[0.08,0.18],[0.08,-0.15]], [[0.72,0.18],[0.72,-0.15]]],
+            'Е': [[[0.7,1],[0,1],[0,0],[0.7,0]], [[0,0.52],[0.5,0.52]]],
+            'Ё': [[[0.7,1],[0,1],[0,0],[0.7,0]], [[0,0.52],[0.5,0.52]], [[0.2,1.15],[0.2,1.2]], [[0.5,1.15],[0.5,1.2]]],
+            'Ж': [[[0,0],[0.8,1]], [[0,1],[0.8,0]], [[0.4,0],[0.4,1]], [[0.15,0.5],[0.65,0.5]]],
+            'З': [[[0.1,0.85],[0.35,1],[0.65,1],[0.75,0.8],[0.7,0.58],[0.4,0.52]], [[0.4,0.52],[0.75,0.44],[0.78,0.2],[0.6,0],[0.3,0],[0.1,0.1]]],
+            'И': [[[0,0],[0,1]], [[0,0],[0.7,1]], [[0.7,0],[0.7,1]]],
+            'Й': [[[0,0],[0,1]], [[0,0],[0.7,1]], [[0.7,0],[0.7,1]], [[0.2,1.12],[0.35,1.22],[0.5,1.12]]],
+            'К': [[[0,0],[0,1]], [[0.7,1],[0,0.4],[0.7,0]]],
+            'Л': [[[0.08,0.15],[0.18,0.95],[0.3,1],[0.7,1]], [[0.7,1],[0.7,0]]],
+            'М': [[[0,0],[0,1]], [[0,1],[0.5,0.25],[1,1]], [[1,1],[1,0]]],
+            'Н': [[[0,0],[0,1]], [[0,0.5],[0.7,0.5]], [[0.7,0],[0.7,1]]],
+            'О': [[[0.4,0],[0.15,0.15],[0,0.45],[0,0.55],[0.15,0.85],[0.4,1],[0.65,0.85],[0.8,0.55],[0.8,0.45],[0.65,0.15],[0.4,0]]],
+            'П': [[[0,0],[0,1]], [[0,1],[0.7,1]], [[0.7,1],[0.7,0]]],
+            'Р': [[[0,0],[0,1]], [[0,1],[0.5,1],[0.72,0.85],[0.72,0.65],[0.5,0.5],[0,0.5]]],
+            'С': [[[0.7,0.85],[0.5,1],[0.2,1],[0,0.7],[0,0.3],[0.2,0],[0.5,0],[0.7,0.15]]],
+            'Т': [[[0.4,0],[0.4,1]], [[0,1],[0.8,1]]],
+            'У': [[[0,1],[0.4,0.4]], [[0.8,1],[0.2,-0.2]]],
+            'Ф': [[[0.4,-0.15],[0.4,1.15]], [[0.4,0.8],[0.15,0.8],[0,0.55],[0.15,0.3],[0.4,0.3]], [[0.4,0.8],[0.65,0.8],[0.8,0.55],[0.65,0.3],[0.4,0.3]]],
+            'Х': [[[0,0],[0.7,1]], [[0,1],[0.7,0]]],
+            'Ц': [[[0,0.18],[0,1]], [[0,0.18],[0.7,0.18]], [[0.7,0.18],[0.7,1]], [[0.7,0.18],[0.7,-0.15],[0.85,-0.15]]],
+            'Ч': [[[0,1],[0,0.55],[0.25,0.42],[0.7,0.42]], [[0.7,1],[0.7,0]]],
+            'Ш': [[[0,1],[0,0]], [[0,0],[0.85,0]], [[0.85,0],[0.85,1]], [[0.42,0],[0.42,1]]],
+            'Щ': [[[0,1],[0,0.18]], [[0,0.18],[0.75,0.18]], [[0.75,0.18],[0.75,1]], [[0.38,0.18],[0.38,1]], [[0.75,0.18],[0.75,-0.15],[0.9,-0.15]]],
+            'Ъ': [[[0.1,1],[0.35,1]], [[0.35,1],[0.35,0]], [[0.35,0],[0.65,0],[0.78,0.22],[0.65,0.45],[0.35,0.45]]],
+            'Ы': [[[0,0],[0,1]], [[0,0],[0.4,0],[0.58,0.22],[0.4,0.45],[0,0.45]], [[0.75,0],[0.75,1]]],
+            'Ь': [[[0,0],[0,1]], [[0,0],[0.45,0],[0.68,0.22],[0.45,0.45],[0,0.45]]],
+            'Э': [[[0.12,0.85],[0.35,1],[0.65,1],[0.8,0.72],[0.8,0.28],[0.65,0],[0.35,0],[0.12,0.15]], [[0.3,0.5],[0.78,0.5]]],
+            'Ю': [[[0,0],[0,1]], [[0,0.5],[0.35,0.5]], [[0.6,0],[0.4,0.18],[0.4,0.82],[0.6,1],[0.8,0.82],[0.8,0.18],[0.6,0]]],
+            'Я': [[[0.7,0],[0.7,1]], [[0.7,1],[0.35,1],[0.15,0.82],[0.35,0.58],[0.7,0.58]], [[0.45,0.58],[0.15,0]]],
+
+            // Строчные русские (Кириллица)
+            'а': [[[0.55,0.42],[0.38,0.58],[0.18,0.58],[0.08,0.42],[0.08,0.18],[0.18,0],[0.38,0],[0.55,0.12]], [[0.55,0.58],[0.55,0]]],
+            'б': [[[0.55,0.45],[0.4,0.58],[0.18,0.58],[0.08,0.38],[0.08,0.18],[0.18,0],[0.4,0],[0.55,0.15],[0.55,1.0],[0.78,1.0]]],
+            'в': [[[0.1,0],[0.1,0.58]], [[0.1,0.58],[0.42,0.58],[0.58,0.46],[0.42,0.3],[0.1,0.3]], [[0.1,0.3],[0.46,0.3],[0.62,0.16],[0.46,0],[0.1,0]]],
+            'г': [[[0.1,0],[0.1,0.58],[0.55,0.58]]],
+            'д': [[[0.12,0.15],[0.18,0.58],[0.5,0.58],[0.55,0.15]], [[0,0.15],[0.68,0.15]], [[0.06,0.15],[0.06,-0.2]], [[0.62,0.15],[0.62,-0.2]]],
+            'е': [[[0.08,0.3],[0.55,0.3],[0.55,0.45],[0.4,0.58],[0.2,0.58],[0.08,0.4],[0.08,0.18],[0.2,0],[0.42,0],[0.55,0.1]]],
+            'ё': [[[0.08,0.3],[0.55,0.3],[0.55,0.45],[0.4,0.58],[0.2,0.58],[0.08,0.4],[0.08,0.18],[0.2,0],[0.42,0],[0.55,0.1]], [[0.2,0.72],[0.2,0.76]], [[0.44,0.72],[0.44,0.76]]],
+            'ж': [[[0.05,0],[0.65,0.58]], [[0.05,0.58],[0.65,0]], [[0.35,0],[0.35,0.58]], [[0.18,0.3],[0.52,0.3]]],
+            'з': [[[0.1,0.48],[0.3,0.58],[0.52,0.58],[0.58,0.46],[0.4,0.32],[0.2,0.32]], [[0.4,0.32],[0.6,0.24],[0.62,0.1],[0.45,0],[0.22,0],[0.08,0.08]]],
+            'и': [[[0.1,0.58],[0.1,0]], [[0.1,0],[0.58,0.58]], [[0.58,0.58],[0.58,0]]],
+            'й': [[[0.1,0.58],[0.1,0]], [[0.1,0],[0.58,0.58]], [[0.58,0.58],[0.58,0]], [[0.22,0.72],[0.35,0.82],[0.48,0.72]]],
+            'к': [[[0.1,0],[0.1,0.58]], [[0.55,0.58],[0.1,0.26],[0.55,0]]],
+            'л': [[[0.08,0.12],[0.18,0.55],[0.28,0.58],[0.58,0.58]], [[0.58,0.58],[0.58,0]]],
+            'м': [[[0.1,0],[0.1,0.58]], [[0.1,0.58],[0.38,0.18],[0.65,0.58]], [[0.65,0.58],[0.65,0]]],
+            'н': [[[0.1,0],[0.1,0.58]], [[0.1,0.3],[0.55,0.3]], [[0.55,0],[0.55,0.58]]],
+            'о': [[[0.32,0],[0.15,0.12],[0.08,0.3],[0.15,0.48],[0.32,0.58],[0.5,0.48],[0.58,0.3],[0.5,0.12],[0.32,0]]],
+            'п': [[[0.1,0],[0.1,0.58]], [[0.1,0.58],[0.55,0.58]], [[0.55,0.58],[0.55,0]]],
+            'р': [[[0.1,-0.3],[0.1,0.58]], [[0.1,0.58],[0.42,0.58],[0.58,0.45],[0.42,0.3],[0.1,0.3]]],
+            'с': [[[0.55,0.46],[0.38,0.58],[0.18,0.58],[0.08,0.4],[0.08,0.18],[0.18,0],[0.38,0],[0.55,0.12]]],
+            'т': [[[0.32,0],[0.32,0.58]], [[0.08,0.58],[0.58,0.58]]],
+            'у': [[[0.08,0.58],[0.32,0.22]], [[0.55,0.58],[0.15,-0.28]]],
+            'ф': [[[0.32,-0.2],[0.32,0.72]], [[0.32,0.55],[0.12,0.55],[0.05,0.38],[0.12,0.2],[0.32,0.2]], [[0.32,0.55],[0.52,0.55],[0.6,0.38],[0.52,0.2],[0.32,0.2]]],
+            'х': [[[0.1,0],[0.55,0.58]], [[0.1,0.58],[0.55,0]]],
+            'ц': [[[0.1,0.12],[0.1,0.58]], [[0.1,0.12],[0.55,0.12]], [[0.55,0.58],[0.55,0.12],[0.55,-0.15],[0.7,-0.15]]],
+            'ч': [[[0.1,0.58],[0.1,0.32],[0.25,0.26],[0.55,0.26]], [[0.55,0.58],[0.55,0]]],
+            'ш': [[[0.1,0.58],[0.1,0],[0.68,0],[0.68,0.58]], [[0.39,0],[0.39,0.58]]],
+            'щ': [[[0.1,0.58],[0.1,0.12],[0.68,0.12],[0.68,0.58]], [[0.39,0.12],[0.39,0.58]], [[0.68,0.12],[0.68,-0.15],[0.82,-0.15]]],
+            'ъ': [[[0.08,0.58],[0.25,0.58],[0.25,0],[0.48,0],[0.62,0.15],[0.48,0.3],[0.25,0.3]]],
+            'ы': [[[0.1,0.58],[0.1,0],[0.35,0],[0.5,0.15],[0.35,0.3],[0.1,0.3]], [[0.65,0],[0.65,0.58]]],
+            'ь': [[[0.1,0.58],[0.1,0],[0.38,0],[0.55,0.15],[0.38,0.3],[0.1,0.3]]],
+            'э': [[[0.1,0.46],[0.25,0.58],[0.45,0.58],[0.58,0.42],[0.58,0.16],[0.45,0],[0.25,0],[0.1,0.12]], [[0.18,0.28],[0.55,0.28]]],
+            'ю': [[[0.1,0],[0.1,0.58]], [[0.1,0.29],[0.3,0.29]], [[0.46,0],[0.3,0.12],[0.3,0.46],[0.46,0.58],[0.66,0.46],[0.66,0.12],[0.46,0]]],
+            'я': [[[0.55,0],[0.55,0.58]], [[0.55,0.58],[0.25,0.58],[0.1,0.44],[0.25,0.29],[0.55,0.29]], [[0.35,0.29],[0.1,0]]],
+
+            // Заглавные латинские
+            'A': [[[0,0],[0.4,1]], [[0.4,1],[0.8,0]], [[0.18,0.38],[0.62,0.38]]],
+            'B': [[[0,0],[0,1]], [[0,1],[0.5,1],[0.7,0.85],[0.7,0.6],[0.5,0.52],[0,0.52]], [[0,0.52],[0.52,0.52],[0.75,0.38],[0.75,0.14],[0.5,0],[0,0]]],
+            'C': [[[0.7,0.85],[0.5,1],[0.2,1],[0,0.7],[0,0.3],[0.2,0],[0.5,0],[0.7,0.15]]],
+            'D': [[[0,0],[0,1]], [[0,1],[0.45,1],[0.75,0.7],[0.75,0.3],[0.45,0],[0,0]]],
+            'E': [[[0.7,1],[0,1],[0,0],[0.7,0]], [[0,0.52],[0.5,0.52]]],
+            'F': [[[0,0],[0,1]], [[0,1],[0.7,1]], [[0,0.52],[0.5,0.52]]],
+            'G': [[[0.7,0.85],[0.5,1],[0.2,1],[0,0.7],[0,0.3],[0.2,0],[0.5,0],[0.7,0.15]], [[0.7,0.15],[0.7,0.4],[0.4,0.4]]],
+            'H': [[[0,0],[0,1]], [[0.7,0],[0.7,1]], [[0,0.5],[0.7,0.5]]],
+            'I': [[[0.2,1],[0.6,1]], [[0.4,1],[0.4,0]], [[0.2,0],[0.6,0]]],
+            'J': [[[0.6,1],[0.6,0.2],[0.4,0],[0.1,0],[0,0.2]]],
+            'K': [[[0,0],[0,1]], [[0.7,1],[0,0.4],[0.7,0]]],
+            'L': [[[0,1],[0,0]], [[0,0],[0.7,0]]],
+            'M': [[[0,0],[0,1]], [[0,1],[0.5,0.25],[1,1]], [[1,1],[1,0]]],
+            'N': [[[0,0],[0,1]], [[0,1],[0.7,0]], [[0.7,0],[0.7,1]]],
+            'O': [[[0.4,0],[0.15,0.15],[0,0.45],[0,0.55],[0.15,0.85],[0.4,1],[0.65,0.85],[0.8,0.55],[0.8,0.45],[0.65,0.15],[0.4,0]]],
+            'P': [[[0,0],[0,1]], [[0,1],[0.5,1],[0.72,0.85],[0.72,0.65],[0.5,0.5],[0,0.5]]],
+            'Q': [[[0.4,0],[0.15,0.15],[0,0.45],[0,0.55],[0.15,0.85],[0.4,1],[0.65,0.85],[0.8,0.55],[0.8,0.45],[0.65,0.15],[0.4,0]], [[0.45,0.3],[0.8,-0.1]]],
+            'R': [[[0,0],[0,1]], [[0,1],[0.5,1],[0.72,0.85],[0.72,0.65],[0.5,0.5],[0,0.5]], [[0.5,0.5],[0.75,0]]],
+            'S': [[[0.7,0.85],[0.5,1],[0.2,1],[0,0.8],[0.2,0.5],[0.5,0.5],[0.7,0.3],[0.7,0.15],[0.5,0],[0.2,0],[0,0.15]]],
+            'T': [[[0.4,0],[0.4,1]], [[0,1],[0.8,1]]],
+            'U': [[[0,1],[0,0.3],[0.2,0],[0.6,0],[0.8,0.3],[0.8,1]]],
+            'V': [[[0,1],[0.4,0],[0.8,1]]],
+            'W': [[[0,1],[0.2,0],[0.5,0.7],[0.8,0],[1,1]]],
+            'X': [[[0,0],[0.7,1]], [[0,1],[0.7,0]]],
+            'Y': [[[0,1],[0.4,0.5],[0.8,1]], [[0.4,0.5],[0.4,0]]],
+            'Z': [[[0,1],[0.7,1],[0,0],[0.7,0]]],
+
+            // Строчные латинские
+            'a': [[[0.55,0.42],[0.38,0.58],[0.18,0.58],[0.08,0.42],[0.08,0.18],[0.18,0],[0.38,0],[0.55,0.12]], [[0.55,0.58],[0.55,0]]],
+            'b': [[[0.1,1.0],[0.1,0]], [[0.1,0.38],[0.25,0.58],[0.48,0.58],[0.62,0.4],[0.62,0.18],[0.48,0],[0.25,0],[0.1,0.12]]],
+            'c': [[[0.55,0.46],[0.38,0.58],[0.18,0.58],[0.08,0.4],[0.08,0.18],[0.18,0],[0.38,0],[0.55,0.12]]],
+            'd': [[[0.55,1.0],[0.55,0]], [[0.55,0.38],[0.4,0.58],[0.18,0.58],[0.08,0.4],[0.08,0.18],[0.18,0],[0.4,0],[0.55,0.12]]],
+            'e': [[[0.08,0.3],[0.55,0.3],[0.55,0.45],[0.4,0.58],[0.2,0.58],[0.08,0.4],[0.08,0.18],[0.2,0],[0.42,0],[0.55,0.1]]],
+            'f': [[[0.5,1.0],[0.35,1.0],[0.2,0.85],[0.2,0]], [[0.05,0.58],[0.45,0.58]]],
+            'g': [[[0.55,0.45],[0.4,0.58],[0.18,0.58],[0.08,0.4],[0.08,0.18],[0.18,0],[0.4,0],[0.55,0.15]], [[0.55,0.58],[0.55,-0.2],[0.38,-0.32],[0.15,-0.25]]],
+            'h': [[[0.1,1.0],[0.1,0]], [[0.1,0.38],[0.25,0.58],[0.45,0.58],[0.55,0.42],[0.55,0]]],
+            'i': [[[0.2,0],[0.2,0.58]], [[0.2,0.74],[0.2,0.78]]],
+            'j': [[[0.3,0.58],[0.3,-0.2],[0.15,-0.32],[0,-0.25]], [[0.3,0.74],[0.3,0.78]]],
+            'k': [[[0.1,0],[0.1,1.0]], [[0.5,0.58],[0.1,0.24],[0.52,0]]],
+            'l': [[[0.2,1.0],[0.2,0.1],[0.3,0]]],
+            'm': [[[0.1,0],[0.1,0.58]], [[0.1,0.42],[0.22,0.58],[0.38,0.58],[0.42,0.42],[0.42,0]], [[0.42,0.42],[0.55,0.58],[0.7,0.58],[0.75,0.42],[0.75,0]]],
+            'n': [[[0.1,0],[0.1,0.58]], [[0.1,0.42],[0.25,0.58],[0.48,0.58],[0.55,0.42],[0.55,0]]],
+            'o': [[[0.32,0],[0.15,0.12],[0.08,0.3],[0.15,0.48],[0.32,0.58],[0.5,0.48],[0.58,0.3],[0.5,0.12],[0.32,0]]],
+            'p': [[[0.1,-0.3],[0.1,0.58]], [[0.1,0.38],[0.25,0.58],[0.48,0.58],[0.62,0.4],[0.62,0.18],[0.48,0],[0.25,0],[0.1,0.12]]],
+            'q': [[[0.55,-0.3],[0.55,0.58]], [[0.55,0.38],[0.4,0.58],[0.18,0.58],[0.08,0.4],[0.08,0.18],[0.18,0],[0.4,0],[0.55,0.12]]],
+            'r': [[[0.1,0],[0.1,0.58]], [[0.1,0.4],[0.22,0.58],[0.45,0.58]]],
+            's': [[[0.5,0.46],[0.32,0.58],[0.18,0.58],[0.08,0.46],[0.15,0.34],[0.42,0.28],[0.5,0.18],[0.42,0],[0.18,0],[0.08,0.1]]],
+            't': [[[0.2,0.85],[0.2,0.12],[0.35,0]], [[0.05,0.58],[0.42,0.58]]],
+            'u': [[[0.1,0.58],[0.1,0.18],[0.25,0],[0.45,0],[0.55,0.18],[0.55,0.58]], [[0.55,0.58],[0.55,0]]],
+            'v': [[[0.08,0.58],[0.32,0],[0.58,0.58]]],
+            'w': [[[0.08,0.58],[0.22,0],[0.38,0.4],[0.52,0],[0.68,0.58]]],
+            'x': [[[0.1,0],[0.55,0.58]], [[0.1,0.58],[0.55,0]]],
+            'y': [[[0.08,0.58],[0.32,0.22]], [[0.55,0.58],[0.15,-0.28]]],
+            'z': [[[0.1,0.58],[0.55,0.58],[0.1,0],[0.55,0]]],
+
+            // Знаки и цифры
+            ' ': [],
+            '.': [[[0.3,0],[0.32,0.05]]],
+            ',': [[[0.35,0.1],[0.18,-0.18]]],
+            '!': [[[0.4,1],[0.4,0.3]], [[0.4,0],[0.42,0.05]]],
+            '?': [[[0.1,0.8],[0.3,1],[0.6,1],[0.7,0.8],[0.7,0.6],[0.4,0.4],[0.4,0.25]], [[0.4,0],[0.42,0.05]]],
+            ':': [[[0.4,0.65],[0.42,0.7]], [[0.4,0.1],[0.42,0.15]]],
+            ';': [[[0.4,0.65],[0.42,0.7]], [[0.4,0.1],[0.22,-0.18]]],
+            '(': [[[0.45,1],[0.15,0.5],[0.45,0]]],
+            ')': [[[0.15,1],[0.45,0.5],[0.15,0]]],
+            '[': [[[0.45,1],[0.18,1],[0.18,0],[0.45,0]]],
+            ']': [[[0.18,1],[0.45,1],[0.45,0],[0.18,0]]],
+            '"': [[[0.2,1],[0.2,0.7]], [[0.5,1],[0.5,0.7]]],
+            '\'': [[[0.35,1],[0.35,0.7]]],
+            '/': [[[0,0],[0.75,1]]],
+            '\\': [[[0,1],[0.75,0]]],
+            '+': [[[0.1,0.5],[0.7,0.5]], [[0.4,0.8],[0.4,0.2]]],
+            '=': [[[0.1,0.6],[0.7,0.6]], [[0.1,0.4],[0.7,0.4]]],
+            '—': [[[0,0.5],[0.85,0.5]]],
+            '-': [[[0.15,0.5],[0.55,0.5]]],
+            '«': [[[0.35,0.65],[0.1,0.45],[0.35,0.25]], [[0.65,0.65],[0.4,0.45],[0.65,0.25]]],
+            '»': [[[0.1,0.65],[0.35,0.45],[0.1,0.25]], [[0.4,0.65],[0.65,0.45],[0.4,0.25]]],
+            '0': [[[0.4,0],[0.15,0.15],[0,0.45],[0,0.55],[0.15,0.85],[0.4,1],[0.65,0.85],[0.8,0.55],[0.8,0.45],[0.65,0.15],[0.4,0]]],
+            '1': [[[0.15,0.75],[0.4,1],[0.4,0]]],
+            '2': [[[0.1,0.85],[0.3,1],[0.6,1],[0.75,0.8],[0.75,0.6],[0,0],[0.75,0]]],
+            '3': [[[0.1,0.85],[0.3,1],[0.6,1],[0.75,0.75],[0.45,0.5]], [[0.45,0.5],[0.75,0.3],[0.6,0],[0.3,0],[0.1,0.15]]],
+            '4': [[[0.55,1],[0,0.35],[0.75,0.35]], [[0.55,0.8],[0.55,0]]],
+            '5': [[[0.7,1],[0.15,1],[0.15,0.55],[0.5,0.6],[0.75,0.4],[0.65,0],[0.2,0]]],
+            '6': [[[0.65,0.9],[0.35,1],[0.1,0.6],[0.1,0.3],[0.3,0],[0.65,0],[0.75,0.3],[0.55,0.5],[0.1,0.4]]],
+            '7': [[[0,1],[0.75,1],[0.3,0]]],
+            '8': [[[0.35,0.5],[0.15,0.7],[0.35,1],[0.6,1],[0.75,0.7],[0.35,0.5]], [[0.35,0.5],[0.15,0.3],[0.35,0],[0.6,0],[0.75,0.3],[0.35,0.5]]],
+            '9': [[[0.75,0.6],[0.25,0.5],[0.1,0.7],[0.35,1],[0.65,1],[0.75,0.7],[0.75,0.3],[0.55,0],[0.2,0]]]
+        };
+
+        const CHAR_WIDTHS = {
+            'М': 1.0, 'Ш': 0.95, 'Щ': 1.0, 'Ж': 0.9, 'Ф': 0.9, 'Ю': 0.9, 'W': 1.0, 'M': 1.0,
+            'I': 0.45, 'i': 0.3, 'l': 0.35, '1': 0.5, '.': 0.35, ',': 0.35, '!': 0.4, '?': 0.65, ':': 0.4, ';': 0.4,
+            '(': 0.45, ')': 0.45, ' ': 0.55, '—': 0.85, '-': 0.5, '«': 0.65, '»': 0.65
+        };
+
+        let customFont = null;
+        let customWidths = {};
+        let paperW = 148, paperH = 210;
+        let randomSeed = 42817;
+        let showAirMoves = false;
+        let zoomLevel = 1.0;
+
+        let pagesData = [];
+        let currentPageIndex = 0;
+
+        let serialPort = null;
+        let serialWriter = null;
+
+
+        function numVal(id, fallback) {
+            let el = document.getElementById(id);
+            if (!el) return fallback;
+            let raw = el.value.toString().replace(',', '.');
+            let val = parseFloat(raw);
+            return isNaN(val) ? fallback : val;
+        }
+
+        function updateJitterVal() {
+            const val = document.getElementById('jitterIntensity').value;
+            const label = document.getElementById('jitterValLabel');
+            if (label) label.innerText = val;
+            render();
+        }
+
+        function resetSeed() {
+            randomSeed = Math.floor(Math.random() * 900000) + 100000;
+            const badge = document.getElementById('seedBadge');
+            if (badge) {
+                badge.innerText = `🎲 #${randomSeed}`;
+                badge.classList.add('pulse');
+                setTimeout(() => badge.classList.remove('pulse'), 250);
+            }
+            render();
+        }
+
+        function toggleAirMoves() {
+            showAirMoves = !showAirMoves;
+            const btn = document.getElementById('btnToggleAir');
+            if (btn) {
+                if (showAirMoves) btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+            render();
+        }
+
+        function changeZoom(delta) {
+            zoomLevel = Math.max(0.4, Math.min(2.5, zoomLevel + delta));
+            const wrapper = document.getElementById('paperWrapper');
+            if (wrapper) wrapper.style.transform = `scale(${zoomLevel})`;
+        }
+
+        function resetZoom() {
+            zoomLevel = 1.0;
+            const wrapper = document.getElementById('paperWrapper');
+            if (wrapper) wrapper.style.transform = `scale(1.0)`;
+        }
+
+        function updatePaperSize() {
+            const preset = document.getElementById('paperPreset').value;
+            let w = 148, h = 210;
+            if(preset==='A4'){ w=210; h=297; }
+            if(preset==='A5'){ w=148; h=210; }
+            if(preset==='A6'){ w=105; h=148; }
+
+            paperW = w; paperH = h;
+            render();
+        }
+
+        function prevPage() {
+            if (currentPageIndex > 0) {
+                currentPageIndex--;
+                render();
+            }
+        }
+
+        function nextPage() {
+            if (currentPageIndex < pagesData.length - 1) {
+                currentPageIndex++;
+                render();
+            }
+        }
+
+        // --- RUSSIAN & ENGLISH SYLLABLE HYPHENATION ENGINE ---
+        function getSyllableHyphens(word) {
+            if (!word || word.length < 5) return [];
+
+            const isRu = /[а-яё]/i.test(word);
+            const splits = [];
+
+            if (isRu) {
+                const vowels = "аеёиоуыэюяАЕЁИОУЫЭЮЯ";
+                for (let i = 2; i < word.length - 2; i++) {
+                    const char = word[i];
+                    const prev = word[i-1];
+                    if ("ьъйЬЪЙ".includes(char)) continue;
+                    if (vowels.includes(prev) && !vowels.includes(char) && vowels.includes(word.substring(i))) {
+                        splits.push({ prefix: word.substring(0, i) + "-", suffix: word.substring(i) });
+                    }
+                }
+            } else {
+                const vowels = "aeiouyAEIOUY";
+                for (let i = 2; i < word.length - 2; i++) {
+                    const prev = word[i-1];
+                    const next = word[i];
+                    if (vowels.includes(prev) && !vowels.includes(next)) {
+                        splits.push({ prefix: word.substring(0, i) + "-", suffix: word.substring(i) });
+                    }
+                }
+            }
+
+            return splits;
+        }
+
+        // --- FULL PRODUCTION-GRADE SVG PATH PARSER ---
+        function parseSVGPathD(d) {
+            if (!d) return [];
+            const tokens = d.match(/([a-df-zA-DF-Z])|([-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?)/g);
+            if (!tokens) return [];
+
+            const strokes = [];
+            let currentStroke = [];
+            let curX = 0, curY = 0, startX = 0, startY = 0;
+            let lastCtrlX = 0, lastCtrlY = 0, lastCmd = '';
+
+            let i = 0;
+            while (i < tokens.length) {
+                let token = tokens[i];
+                let cmd = /^[a-df-zA-DF-Z]$/.test(token) ? token : lastCmd;
+                if (/^[a-df-zA-DF-Z]$/.test(token)) i++;
+                if (!cmd) { i++; continue; }
+
+                const isRel = (cmd === cmd.toLowerCase());
+                const upperCmd = cmd.toUpperCase();
+
+                if (upperCmd === 'M') {
+                    if (currentStroke.length > 1) strokes.push(currentStroke);
+                    const x = parseFloat(tokens[i++]);
+                    const y = parseFloat(tokens[i++]);
+                    if (isNaN(x) || isNaN(y)) continue;
+                    curX = isRel ? curX + x : x;
+                    curY = isRel ? curY + y : y;
+                    startX = curX; startY = curY;
+                    lastCtrlX = curX; lastCtrlY = curY;
+                    currentStroke = [{ x: curX, y: curY }];
+                    lastCmd = isRel ? 'l' : 'L';
+                } else if (upperCmd === 'L') {
+                    const x = parseFloat(tokens[i++]);
+                    const y = parseFloat(tokens[i++]);
+                    if (isNaN(x) || isNaN(y)) continue;
+                    curX = isRel ? curX + x : x;
+                    curY = isRel ? curY + y : y;
+                    lastCtrlX = curX; lastCtrlY = curY;
+                    currentStroke.push({ x: curX, y: curY });
+                    lastCmd = cmd;
+                } else if (upperCmd === 'H') {
+                    const x = parseFloat(tokens[i++]);
+                    if (isNaN(x)) continue;
+                    curX = isRel ? curX + x : x;
+                    lastCtrlX = curX; lastCtrlY = curY;
+                    currentStroke.push({ x: curX, y: curY });
+                    lastCmd = cmd;
+                } else if (upperCmd === 'V') {
+                    const y = parseFloat(tokens[i++]);
+                    if (isNaN(y)) continue;
+                    curY = isRel ? curY + y : y;
+                    lastCtrlX = curX; lastCtrlY = curY;
+                    currentStroke.push({ x: curX, y: curY });
+                    lastCmd = cmd;
+                } else if (upperCmd === 'C') {
+                    const x1 = isRel ? curX + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const y1 = isRel ? curY + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const x2 = isRel ? curX + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const y2 = isRel ? curY + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const x = isRel ? curX + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const y = isRel ? curY + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    if ([x1,y1,x2,y2,x,y].some(isNaN)) continue;
+
+                    const steps = 8;
+                    for (let s = 1; s <= steps; s++) {
+                        const t = s / steps;
+                        const bx = Math.pow(1-t, 3)*curX + 3*Math.pow(1-t, 2)*t*x1 + 3*(1-t)*Math.pow(t, 2)*x2 + Math.pow(t, 3)*x;
+                        const by = Math.pow(1-t, 3)*curY + 3*Math.pow(1-t, 2)*t*y1 + 3*(1-t)*Math.pow(t, 2)*x2 + Math.pow(t, 3)*x;
+                        currentStroke.push({ x: bx, y: by });
+                    }
+                    lastCtrlX = x2; lastCtrlY = y2;
+                    curX = x; curY = y;
+                    lastCmd = cmd;
+                } else if (upperCmd === 'S') {
+                    const x1 = curX * 2 - lastCtrlX;
+                    const y1 = curY * 2 - lastCtrlY;
+                    const x2 = isRel ? curX + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const y2 = isRel ? curY + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const x = isRel ? curX + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const y = isRel ? curY + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    if ([x2,y2,x,y].some(isNaN)) continue;
+
+                    const steps = 8;
+                    for (let s = 1; s <= steps; s++) {
+                        const t = s / steps;
+                        const bx = Math.pow(1-t, 3)*curX + 3*Math.pow(1-t, 2)*t*x1 + 3*(1-t)*Math.pow(t, 2)*x2 + Math.pow(t, 3)*x;
+                        const by = Math.pow(1-t, 3)*curY + 3*Math.pow(1-t, 2)*t*y1 + 3*(1-t)*Math.pow(t, 2)*x2 + Math.pow(t, 3)*x;
+                        currentStroke.push({ x: bx, y: by });
+                    }
+                    lastCtrlX = x2; lastCtrlY = y2;
+                    curX = x; curY = y;
+                    lastCmd = cmd;
+                } else if (upperCmd === 'Q' || upperCmd === 'T') {
+                    const x1 = upperCmd === 'Q' ? (isRel ? curX + parseFloat(tokens[i++]) : parseFloat(tokens[i++])) : (curX * 2 - lastCtrlX);
+                    const y1 = upperCmd === 'Q' ? (isRel ? curY + parseFloat(tokens[i++]) : parseFloat(tokens[i++])) : (curY * 2 - lastCtrlY);
+                    const x = isRel ? curX + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    const y = isRel ? curY + parseFloat(tokens[i++]) : parseFloat(tokens[i++]);
+                    if ([x1,y1,x,y].some(isNaN)) continue;
+
+                    const steps = 6;
+                    for (let s = 1; s <= steps; s++) {
+                        const t = s / steps;
+                        const bx = Math.pow(1-t, 2)*curX + 2*(1-t)*t*x1 + Math.pow(t, 2)*x;
+                        const by = Math.pow(1-t, 2)*curY + 2*(1-t)*t*y1 + Math.pow(t, 2)*y;
+                        currentStroke.push({ x: bx, y: by });
+                    }
+                    lastCtrlX = x1; lastCtrlY = y1;
+                    curX = x; curY = y;
+                    lastCmd = cmd;
+                } else if (upperCmd === 'Z') {
+                    if (currentStroke.length > 0) {
+                        currentStroke.push({ x: startX, y: startY });
+                        strokes.push(currentStroke);
+                        currentStroke = [];
+                    }
+                    curX = startX; curY = startY;
+                    lastCtrlX = curX; lastCtrlY = curY;
+                    lastCmd = '';
+                } else {
+                    i++;
+                }
+            }
+
+            if (currentStroke.length > 1) strokes.push(currentStroke);
+            return strokes;
+        }
+
+        // --- UNIVERSAL SVG FONT / SHEET UPLOADER ---
+        const CHAR_ALIASES = {
+            'dot': '.', 'point': '.', 'comma': ',', 'colon': ':', 'semicolon': ';',
+            'excl': '!', 'quest': '?', 'quote': "'", 'dquote': '"', 'quot': '"',
+            'lparen': '(', 'rparen': ')', 'lbracket': '[', 'rbracket': ']',
+            'slash': '/', 'backslash': '\\', 'plus': '+', 'minus': '-', 'dash': '-',
+            'hyphen': '-', 'emdash': '—', 'equal': '=', 'num': '№', 'percent': '%',
+            'space': ' ', 'laquo': '«', 'raquo': '»'
+        };
+
+        const EN_TO_RU_MAP = {
+            'A':'А','B':'В','E':'Е','K':'К','M':'М','H':'Н','O':'О','P':'Р','C':'С','T':'Т','X':'Х',
+            'a':'а','c':'с','e':'е','o':'о','p':'р','x':'х','y':'у'
+        };
+
+        function parseTaggedOrSheetSVG(xmlDoc) {
+            const allElements = xmlDoc.querySelectorAll("[id], [inkscape\\:label], [data-char]");
+            const taggedGlyphs = {};
+
+            allElements.forEach(el => {
+                let tag = el.getAttribute("data-char") || el.getAttribute("inkscape:label") || el.getAttribute("id") || "";
+                if (!tag) return;
+
+                let isRuPrefix = /^ru_|^cyr_/i.test(tag);
+                let cleanTag = tag.replace(/^char_|^glyph_|^ru_|^cyr_|^en_|^lat_/i, "");
+                let resolvedChar = CHAR_ALIASES[cleanTag.toLowerCase()] || cleanTag;
+
+                if (isRuPrefix && EN_TO_RU_MAP[resolvedChar]) resolvedChar = EN_TO_RU_MAP[resolvedChar];
+                if (resolvedChar.length > 1 && !CHAR_ALIASES[cleanTag.toLowerCase()]) return;
+
+                const paths = el.tagName.toLowerCase() === "path" ? [el] : el.querySelectorAll("path");
+                const strokes = [];
+                let gMinX = Infinity, gMaxX = -Infinity, gMinY = Infinity, gMaxY = -Infinity;
+
+                paths.forEach(p => {
+                    const d = p.getAttribute("d");
+                    if (d) {
+                        const parsed = parseSVGPathD(d);
+                        parsed.forEach(stroke => {
+                            if (stroke.length < 2) return;
+                            strokes.push(stroke);
+                            stroke.forEach(pt => {
+                                if (pt.x < gMinX) gMinX = pt.x;
+                                if (pt.x > gMaxX) gMaxX = pt.x;
+                                if (pt.y < gMinY) gMinY = pt.y;
+                                if (pt.y > gMaxY) gMaxY = pt.y;
+                            });
+                        });
+                    }
+                });
+
+                if (strokes.length > 0 && gMinX !== Infinity) {
+                    taggedGlyphs[resolvedChar] = {
+                        char: resolvedChar,
+                        strokes: strokes,
+                        minX: gMinX, maxX: gMaxX,
+                        minY: gMinY, maxY: gMaxY,
+                        w: gMaxX - gMinX, h: gMaxY - gMinY,
+                        cy: (gMinY + gMaxY) / 2
+                    };
+                }
+            });
+
+            const glyphList = Object.values(taggedGlyphs);
+            if (glyphList.length < 5) return null;
+
+            const capSamples = glyphList.filter(g => /[А-ЯA-Z0-9]/.test(g.char));
+            const heights = (capSamples.length >= 3 ? capSamples : glyphList).map(g => g.h).sort((a,b) => a - b);
+            const globalCapH = Math.max(10, heights[Math.floor(heights.length / 2)] || 30);
+
+            glyphList.sort((a, b) => a.cy - b.cy);
+            const rows = [];
+            let currentRow = [];
+            let rowMinY = Infinity, rowMaxY = -Infinity;
+
+            glyphList.forEach(g => {
+                if (currentRow.length === 0) {
+                    currentRow.push(g);
+                    rowMinY = g.minY; rowMaxY = g.maxY;
+                } else {
+                    const rowCenter = (rowMinY + rowMaxY) / 2;
+                    if (Math.abs(g.cy - rowCenter) < globalCapH * 0.8) {
+                        currentRow.push(g);
+                        rowMinY = Math.min(rowMinY, g.minY);
+                        rowMaxY = Math.max(rowMaxY, g.maxY);
+                    } else {
+                        rows.push(currentRow);
+                        currentRow = [g];
+                        rowMinY = g.minY; rowMaxY = g.maxY;
+                    }
+                }
+            });
+            if (currentRow.length > 0) rows.push(currentRow);
+
+            const newFont = {};
+            const newWidths = {};
+            const descenders = new Set(['р', 'у', 'ф', 'д', 'ц', 'щ', 'j', 'g', 'p', 'y', 'q', ',', ';']);
+
+            rows.forEach(rowGlyphs => {
+                const nonDesc = rowGlyphs.filter(g => !descenders.has(g.char));
+                const targetList = nonDesc.length > 0 ? nonDesc : rowGlyphs;
+                const maxYs = targetList.map(g => g.maxY).sort((a,b) => a - b);
+                const rowBaseY = maxYs[Math.floor(maxYs.length * 0.8)] || maxYs[maxYs.length - 1];
+
+                rowGlyphs.forEach(g => {
+                    const gWidth = Math.max(1, g.w);
+                    const normStrokes = g.strokes.map(stroke => stroke.map(pt => [
+                        (pt.x - g.minX) / gWidth,
+                        (rowBaseY - pt.y) / globalCapH
+                    ]));
+                    const wRatio = gWidth / globalCapH;
+                    newFont[g.char] = normStrokes;
+                    newWidths[g.char] = Math.max(0.25, wRatio + 0.12);
+                });
+            });
+
+            return { font: newFont, widths: newWidths, count: glyphList.length };
+        }
+
+        function handleSVGFontUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(text, "image/svg+xml");
+
+                    const glyphs = xmlDoc.querySelectorAll("glyph");
+                    if (glyphs.length > 0) {
+                        const fontFace = xmlDoc.querySelector("font-face");
+                        const fontTag = xmlDoc.querySelector("font");
+                        let unitsPerEm = 1000, ascent = 800, defaultHorizAdv = 1000;
+                        if (fontFace) {
+                            if (fontFace.getAttribute("units-per-em")) unitsPerEm = parseFloat(fontFace.getAttribute("units-per-em")) || 1000;
+                            if (fontFace.getAttribute("ascent")) ascent = parseFloat(fontFace.getAttribute("ascent")) || 800;
+                        }
+                        if (fontTag && fontTag.getAttribute("horiz-adv-x")) defaultHorizAdv = parseFloat(fontTag.getAttribute("horiz-adv-x")) || unitsPerEm;
+
+                        const normScale = ascent || (unitsPerEm * 0.8) || 1000;
+                        const newFont = {}, newWidths = {};
+                        let count = 0;
+
+                        glyphs.forEach(glyph => {
+                            let unicode = glyph.getAttribute("unicode");
+                            const glyphName = glyph.getAttribute("glyph-name");
+                            const d = glyph.getAttribute("d");
+                            const horizAdv = glyph.getAttribute("horiz-adv-x") ? (parseFloat(glyph.getAttribute("horiz-adv-x")) || defaultHorizAdv) : defaultHorizAdv;
+
+                            if (!unicode && glyphName) {
+                                if (/^uni[0-9a-fA-F]{4}$/.test(glyphName)) unicode = String.fromCharCode(parseInt(glyphName.substring(3), 16));
+                                else if (/^u[0-9a-fA-F]{4}$/.test(glyphName)) unicode = String.fromCharCode(parseInt(glyphName.substring(1), 16));
+                                else if (glyphName === 'space') unicode = ' ';
+                            }
+
+                            if (!unicode || !d) return;
+                            let rawPaths = parseSVGPathD(d);
+                            let normPaths = rawPaths.map(stroke => stroke.map(pt => [pt.x / normScale, pt.y / normScale]));
+
+                            if (normPaths.length > 0) {
+                                newFont[unicode] = normPaths;
+                                newWidths[unicode] = Math.max(0.2, (horizAdv / normScale));
+                                count++;
+                            }
+                        });
+
+                        customFont = newFont;
+                        customWidths = newWidths;
+                        updateFontUI(`✅ ${file.name.substring(0, 8)}... (${count} гл.)`);
+                        return;
+                    }
+
+                    const sheetResult = parseTaggedOrSheetSVG(xmlDoc);
+                    if (sheetResult && sheetResult.count > 0) {
+                        customFont = sheetResult.font;
+                        customWidths = sheetResult.widths;
+                        updateFontUI(`✅ Лист (${sheetResult.count} б.)`);
+                        alert(`Шрифт "${file.name}" успешно загружен! Распознано букв: ${sheetResult.count}`);
+                        return;
+                    }
+
+                    alert("Не удалось распознать буквы в SVG. Убедитесь, что группы названы буквами в Inkscape.");
+                } catch (err) {
+                    console.error(err);
+                    alert("Ошибка разбора SVG: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function updateFontUI(text) {
+            const btn = document.getElementById('btnSvgFont');
+            const btnReset = document.getElementById('btnResetFont');
+            if (btn) { btn.innerText = text; btn.classList.add('active'); }
+            if (btnReset) btnReset.style.display = 'inline-block';
+            render();
+        }
+
+        function resetDefaultFont() {
+            document.getElementById('fontPreset').value = '';
+            customFont = null;
+            customWidths = {};
+            const btn = document.getElementById('btnSvgFont');
+            const btnReset = document.getElementById('btnResetFont');
+            if (btn) { btn.innerText = `📁 SVG Шрифт / лист`; btn.classList.remove('active'); }
+            if (btnReset) btnReset.style.display = 'none';
+            document.getElementById('svgFontInput').value = '';
+            render();
+        }
+
+        function getCharWidth(ch) {
+            if (customWidths[ch] !== undefined) return customWidths[ch];
+            if (CHAR_WIDTHS[ch] !== undefined) return CHAR_WIDTHS[ch];
+            return 0.65;
+        }
+
+        function getCharGlyph(ch) {
+            if (customFont && customFont[ch]) return customFont[ch];
+            if (DEFAULT_FONT[ch]) return DEFAULT_FONT[ch];
+            return DEFAULT_FONT[' '];
+        }
+
+        function calculateWordWidth(word, fontSize, letterSpacing) {
+            let w = 0;
+            const chars = Array.from(word);
+            chars.forEach((ch, idx) => {
+                w += (fontSize * getCharWidth(ch)) + (idx < chars.length - 1 ? letterSpacing : 0);
+            });
+            return w;
+        }
+
+        // --- TSP PATH OPTIMIZATION ---
+        function optimizePathsTSP(rawPaths, mode) {
+            if (!rawPaths || rawPaths.length <= 1 || mode === 'none') return rawPaths.slice();
+
+            if (mode === 'line') {
+                const lineGroups = {};
+                rawPaths.forEach(p => {
+                    const lId = p.lineIndex !== undefined ? p.lineIndex : 0;
+                    if (!lineGroups[lId]) lineGroups[lId] = [];
+                    lineGroups[lId].push(p);
+                });
+
+                let result = [];
+                let currentPos = { x: 0, y: 0 };
+
+                Object.keys(lineGroups).sort((a, b) => parseFloat(a) - parseFloat(b)).forEach(k => {
+                    const group = lineGroups[k];
+                    const optimizedGroup = nearestNeighborReversible(group, currentPos);
+                    result.push(...optimizedGroup);
+                    if (optimizedGroup.length > 0) {
+                        const lastStroke = optimizedGroup[optimizedGroup.length - 1];
+                        currentPos = lastStroke[lastStroke.length - 1];
+                    }
+                });
+                return result;
+            }
+
+            if (mode === 'global') return nearestNeighborReversible(rawPaths, { x: 0, y: 0 });
+            return rawPaths.slice();
+        }
+
+        function nearestNeighborReversible(paths, startPos) {
+            if (paths.length <= 1) return paths.slice();
+            const unvisited = paths.map((p, idx) => ({ path: p, index: idx }));
+            const optimized = [];
+            let curX = startPos.x, curY = startPos.y;
+
+            while (unvisited.length > 0) {
+                let bestIdx = -1;
+                let bestDistSq = Infinity;
+                let shouldReverse = false;
+
+                for (let i = 0; i < unvisited.length; i++) {
+                    const p = unvisited[i].path;
+                    const pStart = p[0];
+                    const pEnd = p[p.length - 1];
+
+                    const dStartSq = (pStart.x - curX) ** 2 + (pStart.y - curY) ** 2;
+                    if (dStartSq < bestDistSq) {
+                        bestDistSq = dStartSq; bestIdx = i; shouldReverse = false;
+                    }
+
+                    const dEndSq = (pEnd.x - curX) ** 2 + (pEnd.y - curY) ** 2;
+                    if (dEndSq < bestDistSq) {
+                        bestDistSq = dEndSq; bestIdx = i; shouldReverse = true;
+                    }
+                }
+
+                if (bestIdx !== -1) {
+                    let chosen = unvisited[bestIdx].path;
+                    if (shouldReverse) chosen = chosen.slice().reverse();
+                    optimized.push(chosen);
+                    const lastPt = chosen[chosen.length - 1];
+                    curX = lastPt.x; curY = lastPt.y;
+                    unvisited.splice(bestIdx, 1);
+                } else break;
+            }
+            return optimized;
+        }
+
+        function calculateTravelDistances(paths) {
+            let drawDist = 0, airDist = 0;
+            let curX = 0, curY = 0;
+            if (!paths || paths.length === 0) return { drawDist: 0, airDist: 0 };
+
+            paths.forEach((p) => {
+                if (!p || p.length < 2) return;
+                const startPt = p[0];
+                airDist += Math.hypot(startPt.x - curX, startPt.y - curY);
+                for (let i = 0; i < p.length - 1; i++) {
+                    drawDist += Math.hypot(p[i+1].x - p[i].x, p[i+1].y - p[i].y);
+                }
+                const endPt = p[p.length - 1];
+                curX = endPt.x; curY = endPt.y;
+            });
+            airDist += Math.hypot(0 - curX, 0 - curY);
+            return { drawDist, airDist };
+        }
+
+        // --- CORE RENDER ENGINE ---
+        function render() {
+            try {
+                const scale = 3.5; // Screen resolution scale (3.5 px per mm)
+
+                const wrapper = document.getElementById('paperWrapper');
+                if (!wrapper) return;
+                wrapper.style.width = (paperW * scale) + 'px';
+                wrapper.style.height = (paperH * scale) + 'px';
+
+                const canvas = document.getElementById('canvas');
+                if (!canvas) return;
+                canvas.width = paperW * scale;
+                canvas.height = paperH * scale;
+
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                let mL = numVal('mLeft', 15);
+                let mR = numVal('mRight', 15);
+                let mT = numVal('mTop', 20);
+                let mB = numVal('mBottom', 20);
+                const gutter = numVal('gutterWidth', 5);
+                const paraIndent = numVal('paraIndent', 10);
+                const penWidth = numVal('penWidth', 0.4);
+
+                // ОПРЕДЕЛЕНИЕ ПОВОРОТА НА 180°
+                const rotSetting = document.getElementById('pageRotation') ? document.getElementById('pageRotation').value : '0';
+                let isPageRotated180 = false;
+
+                if (rotSetting === '180') {
+                    isPageRotated180 = true;
+                } else if (rotSetting === 'auto_odd') {
+                    // Нечетные страницы (1, 3, 5...) имеют индексы 0, 2, 4... -> поворачиваем на 180°
+                    isPageRotated180 = (currentPageIndex % 2 === 0);
+                } else if (rotSetting === 'auto_even') {
+                    // Четные страницы (2, 4, 6...) имеют индексы 1, 3, 5... -> поворачиваем на 180°
+                    isPageRotated180 = (currentPageIndex % 2 === 1);
+                } else {
+                    isPageRotated180 = false;
+                }
+
+                // РАЗВОРОТ СТРАНИЦЫ (ЛЕВАЯ / ПРАВАЯ)
+                let spreadMode = document.getElementById('pageSpread') ? document.getElementById('pageSpread').value : 'auto';
+                if (spreadMode === 'auto') {
+                    spreadMode = (currentPageIndex % 2 === 0) ? 'right' : 'left';
+                }
+
+                if (spreadMode === 'right') mL += gutter;
+                else if (spreadMode === 'left') mR += gutter;
+
+                // СЕТКА ТЕТРАДИ
+                const styleEl = document.getElementById('notebookStyle');
+                const style = styleEl ? styleEl.value : 'grid5';
+                ctx.strokeStyle = '#cbe0f5';
+                ctx.lineWidth = 0.8;
+
+                let gridStep = 0;
+                if (style === 'grid5') {
+                    gridStep = 5;
+                    for(let x=mL; x<=paperW-mR; x+=5) { ctx.beginPath(); ctx.moveTo(x*scale, mT*scale); ctx.lineTo(x*scale, (paperH-mB)*scale); ctx.stroke(); }
+                    for(let y=mT; y<=paperH-mB; y+=5) { ctx.beginPath(); ctx.moveTo(mL*scale, y*scale); ctx.lineTo((paperW-mR)*scale, y*scale); ctx.stroke(); }
+                } else if (style === 'lines8') {
+                    gridStep = 8;
+                    for(let y=mT+8; y<=paperH-mB; y+=8) { ctx.beginPath(); ctx.moveTo(mL*scale, y*scale); ctx.lineTo((paperW-mR)*scale, y*scale); ctx.stroke(); }
+                } else if (style === 'grid10') {
+                    gridStep = 10;
+                    for(let x=0; x<=paperW; x+=10) { ctx.beginPath(); ctx.moveTo(x*scale, 0); ctx.lineTo(x*scale, paperH*scale); ctx.stroke(); }
+                    for(let y=0; y<=paperH; y+=10) { ctx.beginPath(); ctx.moveTo(0, y*scale); ctx.lineTo(paperW*scale, y*scale); ctx.stroke(); }
+                }
+
+                // КРАСНАЯ ЛИНИЯ ПОЛЕЙ
+                const redMode = document.getElementById('redMarginMode').value;
+                let drawRedX = null;
+                if (redMode === 'auto') drawRedX = (spreadMode === 'right') ? (paperW - mR) : mL;
+                else if (redMode === 'left') drawRedX = mL;
+                else if (redMode === 'right') drawRedX = paperW - mR;
+
+                if (drawRedX !== null) {
+                    ctx.strokeStyle = '#ff7777';
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.moveTo(drawRedX * scale, 0);
+                    ctx.lineTo(drawRedX * scale, paperH * scale);
+                    ctx.stroke();
+                }
+
+                // МАРКЕР ВЕРХА ТЕТРАДИ ДЛЯ ОПЕРАТОРА ЧПУ
+                ctx.fillStyle = isPageRotated180 ? '#f43f5e' : '#6366f1';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                if (!isPageRotated180) {
+                    ctx.fillText('⬆️ ВЕРХ ЛИСТА (0° СТАНДАРТ)', (paperW * scale) / 2, 12);
+                } else {
+                    ctx.fillText('⬇️ ВЕРХ ТЕТРАДИ ВНИЗУ (ПЕРЕВЕРНУТО 180°)', (paperW * scale) / 2, (paperH * scale) - 6);
+                }
+
+                // PRNG (Случайный генератор с привязкой к Seed)
+                let seed = randomSeed;
+                function rand() {
+                    seed = (seed * 9301 + 49297) % 233280;
+                    return seed / 233280;
+                }
+                function randRange(min, max) { return min + rand() * (max - min); }
+
+                // ПАРАМЕТРЫ ТЕКСТА
+                const textEl = document.getElementById('textInput');
+                const text = textEl ? textEl.value : '';
+                const charCountEl = document.getElementById('charCountLabel');
+                if (charCountEl) charCountEl.innerText = `${text.length} симв.`;
+
+                const fontSize = numVal('fontSize', 5);
+                const rawLineHeight = numVal('lineHeight', 10);
+                const letterSpacing = numVal('letterSpacing', 0.2);
+                const jitterInt = numVal('jitterIntensity', 2);
+                const baseSlant = numVal('slantAngle', 0);
+                const waveIntensity = numVal('waveIntensity', 0.20);
+                const tspMode = document.getElementById('tspMode').value;
+                const snapToGrid = document.getElementById('snapToGrid') ? document.getElementById('snapToGrid').checked : true;
+                const smartSqueeze = document.getElementById('smartSqueeze') ? document.getElementById('smartSqueeze').checked : true;
+                const currentAlign = document.getElementById('textAlign') ? document.getElementById('textAlign').value : 'left';
+
+                // ВЫРАВНИВАНИЕ ПО СЕТКЕ
+                let effectiveLineHeight = rawLineHeight;
+                let startBaselineY = mT + fontSize;
+
+                if (snapToGrid && gridStep > 0) {
+                    effectiveLineHeight = Math.max(gridStep, Math.round(rawLineHeight / gridStep) * gridStep);
+                    startBaselineY = Math.ceil((mT + fontSize) / gridStep) * gridStep;
+                }
+
+                const maxLineWidth = Math.max(10, paperW - mL - mR);
+                const maxLinesPerPage = Math.max(1, Math.floor((paperH - mB - startBaselineY) / effectiveLineHeight) + 1);
+
+                // РАЗБИВКА НА СТРОКИ И СЛОВА
+                let paragraphs = text.split('\n');
+                let allFormattedLines = [];
+                const spaceWidth = (fontSize * getCharWidth(' ')) + letterSpacing;
+
+                paragraphs.forEach(para => {
+                    if (para.trim() === '') {
+                        allFormattedLines.push({ words: [], isFirstLine: false, isLastInPara: true, squeezeFactor: 1.0 });
+                        return;
+                    }
+
+                    let rawWords = para.split(/\s+/).filter(w => w.length > 0);
+                    let currentLineWords = [];
+                    let isFirst = true;
+
+                    for (let wIdx = 0; wIdx < rawWords.length; wIdx++) {
+                        let word = rawWords[wIdx];
+                        let availWidth = isFirst ? (maxLineWidth - paraIndent) : maxLineWidth;
+
+                        let testWords = [...currentLineWords, word];
+                        let testW = 0;
+                        testWords.forEach((w, i) => {
+                            testW += calculateWordWidth(w, fontSize, letterSpacing) + (i < testWords.length - 1 ? spaceWidth : 0);
+                        });
+
+                        if (testW <= availWidth) {
+                            currentLineWords.push(word);
+                        } else {
+                            let overflowRatio = testW / availWidth;
+                            if (smartSqueeze && overflowRatio <= 1.15 && currentLineWords.length > 0) {
+                                currentLineWords.push(word);
+                                allFormattedLines.push({
+                                    words: currentLineWords,
+                                    isFirstLine: isFirst,
+                                    isLastInPara: false,
+                                    squeezeFactor: 1.0 / overflowRatio
+                                });
+                                currentLineWords = [];
+                                isFirst = false;
+                                continue;
+                            }
+
+                            let hyphenFound = false;
+                            if (smartSqueeze && word.length >= 5) {
+                                const splits = getSyllableHyphens(word);
+                                for (let s = splits.length - 1; s >= 0; s--) {
+                                    const split = splits[s];
+                                    let testWithHyphen = [...currentLineWords, split.prefix];
+                                    let hypW = 0;
+                                    testWithHyphen.forEach((w, i) => {
+                                        hypW += calculateWordWidth(w, fontSize, letterSpacing) + (i < testWithHyphen.length - 1 ? spaceWidth : 0);
+                                    });
+
+                                    let hypRatio = hypW / availWidth;
+                                    if (hypW <= availWidth || hypRatio <= 1.06) {
+                                        currentLineWords.push(split.prefix);
+                                        allFormattedLines.push({
+                                            words: currentLineWords,
+                                            isFirstLine: isFirst,
+                                            isLastInPara: false,
+                                            squeezeFactor: hypRatio > 1.0 ? (1.0 / hypRatio) : 1.0
+                                        });
+                                        currentLineWords = [];
+                                        isFirst = false;
+                                        rawWords.splice(wIdx + 1, 0, split.suffix);
+                                        hyphenFound = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!hyphenFound) {
+                                if (currentLineWords.length > 0) {
+                                    allFormattedLines.push({
+                                        words: currentLineWords,
+                                        isFirstLine: isFirst,
+                                        isLastInPara: false,
+                                        squeezeFactor: 1.0
+                                    });
+                                    currentLineWords = [word];
+                                    isFirst = false;
+                                } else {
+                                    allFormattedLines.push({
+                                        words: [word],
+                                        isFirstLine: isFirst,
+                                        isLastInPara: false,
+                                        squeezeFactor: Math.min(1.0, availWidth / testW)
+                                    });
+                                    currentLineWords = [];
+                                    isFirst = false;
+                                }
+                            }
+                        }
+                    }
+
+                    if (currentLineWords.length > 0) {
+                        allFormattedLines.push({
+                            words: currentLineWords,
+                            isFirstLine: isFirst,
+                            isLastInPara: true,
+                            squeezeFactor: 1.0
+                        });
+                    }
+                });
+
+                // МНОГОСТРАНИЧНОСТЬ
+                pagesData = [];
+                for (let i = 0; i < allFormattedLines.length; i += maxLinesPerPage) {
+                    pagesData.push(allFormattedLines.slice(i, i + maxLinesPerPage));
+                }
+                if (pagesData.length === 0) pagesData.push([]);
+
+                if (currentPageIndex >= pagesData.length) currentPageIndex = pagesData.length - 1;
+                if (currentPageIndex < 0) currentPageIndex = 0;
+
+                const pageIndicator = document.getElementById('pageIndicator');
+                if (pageIndicator) {
+                    const rotBadge = isPageRotated180 ? ' 🔄 (180°)' : '';
+                    pageIndicator.innerText = `Стр. ${currentPageIndex + 1} из ${pagesData.length}${rotBadge}`;
+                }
+
+                // ГЕНЕРАЦИЯ ВЕКТОРНЫХ ТРАЕКТОРИЙ
+                const currentLines = pagesData[currentPageIndex] || [];
+                let currentY = startBaselineY;
+                let rawPaths = [];
+                let totalCharsOnPage = 0;
+
+                currentLines.forEach((lineObj, lineIdx) => {
+                    const words = lineObj.words;
+                    const squeeze = lineObj.squeezeFactor || 1.0;
+                    if (words.length === 0) {
+                        currentY += effectiveLineHeight;
+                        return;
+                    }
+
+                    const effFontSize = fontSize;
+                    const effLetterSpacing = letterSpacing * squeeze;
+
+                    const linePhase = randRange(0, Math.PI * 2);
+                    const lineWaveAmp = waveIntensity * randRange(0.7, 1.3);
+
+                    let naturalTextW = 0;
+                    words.forEach((w, wIdx) => {
+                        Array.from(w).forEach((ch, idx) => {
+                            naturalTextW += (effFontSize * getCharWidth(ch) * squeeze) + (idx < w.length - 1 ? effLetterSpacing : 0);
+                        });
+                        if (wIdx < words.length - 1) {
+                            naturalTextW += (effFontSize * getCharWidth(' ') * squeeze) + effLetterSpacing;
+                        }
+                    });
+
+                    const availLineWidth = lineObj.isFirstLine ? (maxLineWidth - paraIndent) : maxLineWidth;
+                    let startX = mL + (lineObj.isFirstLine ? paraIndent : 0);
+                    let extraSpacePerGap = 0;
+
+                    if (currentAlign === 'center') {
+                        startX += Math.max(0, (availLineWidth - naturalTextW) / 2);
+                    } else if (currentAlign === 'right') {
+                        startX += Math.max(0, availLineWidth - naturalTextW);
+                    } else if (currentAlign === 'justify' && !lineObj.isLastInPara && words.length > 1) {
+                        const gapCount = words.length - 1;
+                        extraSpacePerGap = Math.max(0, (availLineWidth - naturalTextW) / gapCount);
+                    }
+
+                    let currentX = startX;
+
+                    words.forEach((w, wIdx) => {
+                        const wordYFloat = (jitterInt > 0) ? randRange(-1, 1) * (jitterInt * 0.05) : 0;
+                        const chars = Array.from(w);
+
+                        chars.forEach(ch => {
+                            totalCharsOnPage++;
+                            const glyph = getCharGlyph(ch);
+                            const wRatio = getCharWidth(ch);
+
+                            const slantDeg = baseSlant + (jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.8) : 0);
+                            const slantRad = (slantDeg * Math.PI) / 180;
+                            const shearFactor = Math.tan(slantRad);
+
+                            const scaleX = squeeze * (1.0 + (jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.025) : 0));
+                            const scaleY = 1.0 + (jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.025) : 0);
+
+                            const charBoxW = effFontSize * wRatio * scaleX;
+                            const charBoxH = effFontSize * scaleY;
+
+                            const jitterX = jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.04) : 0;
+                            const jitterY = jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.05) : 0;
+
+                            const waveOffset = Math.sin((currentX / paperW) * Math.PI * 2 + linePhase) * lineWaveAmp;
+
+                            const charBaseX = currentX + jitterX;
+                            const charBaseY = currentY + jitterY + wordYFloat + waveOffset;
+
+                            if (glyph && glyph.length > 0) {
+                                glyph.forEach(stroke => {
+                                    if (stroke.length < 2) return;
+
+                                    const pagePts = stroke.map(pt => {
+                                        let px = charBaseX + (pt[0] * charBoxW) + (pt[1] * charBoxH * shearFactor);
+                                        let py = charBaseY - (pt[1] * charBoxH);
+                                        return { x: px, y: py };
+                                    });
+
+                                    const subPath = [];
+                                    for (let i = 0; i < pagePts.length - 1; i++) {
+                                        const p1 = pagePts[i];
+                                        const p2 = pagePts[i + 1];
+                                        const dx = p2.x - p1.x;
+                                        const dy = p2.y - p1.y;
+                                        const segLen = Math.hypot(dx, dy);
+
+                                        if (i === 0) {
+                                            subPath.push({
+                                                x: p1.x + (jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.015) : 0),
+                                                y: p1.y + (jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.015) : 0)
+                                            });
+                                        }
+
+                                        if (segLen > 0.8 && jitterInt > 0) {
+                                            const steps = Math.min(6, Math.max(2, Math.floor(segLen / 0.6)));
+                                            const nx = -dy / segLen;
+                                            const ny = dx / segLen;
+                                            for (let s = 1; s < steps; s++) {
+                                                const t = s / steps;
+                                                const tremor = randRange(-1, 1) * (jitterInt * 0.02);
+                                                subPath.push({
+                                                    x: p1.x + dx * t + nx * tremor,
+                                                    y: p1.y + dy * t + ny * tremor
+                                                });
+                                            }
+                                        }
+
+                                        subPath.push({
+                                            x: p2.x + (jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.015) : 0),
+                                            y: p2.y + (jitterInt > 0 ? randRange(-1, 1) * (jitterInt * 0.015) : 0)
+                                        });
+                                    }
+
+                                    // ТРАНСФОРМАЦИЯ 180° ПРИ ПЕРЕВЕРНУТОЙ СТРАНИЦЕ
+                                    const finalStroke = subPath.map(pt => {
+                                        let finalX = pt.x;
+                                        let finalY = pt.y;
+                                        if (isPageRotated180) {
+                                            finalX = paperW - pt.x;
+                                            finalY = paperH - pt.y;
+                                        }
+                                        return {
+                                            x: finalX,
+                                            y: finalY,
+                                            mmY: paperH - finalY // GRBL CNC Coordinate
+                                        };
+                                    });
+                                    finalStroke.lineIndex = lineIdx;
+                                    rawPaths.push(finalStroke);
+                                });
+                            }
+
+                            currentX += (effFontSize * wRatio * squeeze) + effLetterSpacing;
+                        });
+
+                        if (wIdx < words.length - 1) {
+                            currentX += (effFontSize * getCharWidth(' ') * squeeze) + effLetterSpacing + extraSpacePerGap;
+                        }
+                    });
+
+                    currentY += effectiveLineHeight;
+                });
+
+                // TSP ОПТИМИЗАЦИЯ
+                const initialStats = calculateTravelDistances(rawPaths);
+                const optimizedPaths = optimizePathsTSP(rawPaths, tspMode);
+                pagesData[currentPageIndex].paths = optimizedPaths;
+                const {minX, minY, maxX, maxY} = machineBounds(optimizedPaths);
+                document.getElementById('machineBounds').textContent =
+                    `От нуля: X ${minX.toFixed(1)}…${maxX.toFixed(1)} · Y ${minY.toFixed(1)}…${maxY.toFixed(1)} мм`;
+                const optStats = calculateTravelDistances(optimizedPaths);
+
+                // ОТРИСОВКА ХОЛОСТЫХ ПЕРЕМЕЩЕНИЙ
+                if (showAirMoves && optimizedPaths.length > 0) {
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
+                    ctx.lineWidth = 0.9;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    let prevEnd = { x: 0, y: 0 };
+                    optimizedPaths.forEach((path) => {
+                        const nextStart = path[0];
+                        ctx.moveTo(prevEnd.x * scale, prevEnd.y * scale);
+                        ctx.lineTo(nextStart.x * scale, nextStart.y * scale);
+                        prevEnd = path[path.length - 1];
+                    });
+                    ctx.moveTo(prevEnd.x * scale, prevEnd.y * scale);
+                    ctx.lineTo(0, 0);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // ОТРИСОВКА ТЕКСТА ЧЕРНИЛАМИ
+                const inkColor = document.getElementById('inkColor').value;
+                ctx.strokeStyle = inkColor;
+                ctx.lineWidth = Math.max(0.6, penWidth * scale * 0.7);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                optimizedPaths.forEach(path => {
+                    ctx.beginPath();
+                    path.forEach((pt, idx) => {
+                        if (idx === 0) ctx.moveTo(pt.x * scale, pt.y * scale);
+                        else ctx.lineTo(pt.x * scale, pt.y * scale);
+                    });
+                    ctx.stroke();
+                });
+
+                // ТЕЛЕМЕТРИЯ
+                const fDraw = numVal('fDraw', 1500);
+                const fRapid = numVal('fRapid', 3000);
+                const dwell = numVal('dwellTime', 0.0);
+
+                const drawM = ((optStats.drawDist || 0) / 1000).toFixed(2);
+                const airM = ((optStats.airDist || 0) / 1000).toFixed(2);
+
+                const totalSeconds = ((optStats.drawDist || 0) / (fDraw / 60)) + ((optStats.airDist || 0) / (fRapid / 60)) + (optimizedPaths.length * (0.12 + dwell));
+                const mins = Math.floor((totalSeconds || 0) / 60);
+                const secs = Math.round((totalSeconds || 0) % 60);
+
+                document.getElementById('statChars').innerText = totalCharsOnPage;
+                document.getElementById('statPaths').innerText = optimizedPaths.length;
+                document.getElementById('statDrawDist').innerText = `${drawM} м`;
+                document.getElementById('statAirDist').innerText = `${airM} м`;
+                document.getElementById('statTime').innerText = `~${mins} мин ${secs} сек`;
+
+                // Автосохранение настроек при каждом рендере
+                saveAllSettings();
+
+            } catch (err) {
+                console.error("Render error:", err);
+            }
+        }
+
+        function machinePaths(paths, angle = Number(document.getElementById('machineRotation').value)) {
+            const rotated = paths.map(path => path.map(({x, mmY: y}) => {
+                switch (angle) {
+                    case 90: return {x: -y, y: x};
+                    case -90: return {x: y, y: -x};
+                    case 180: return {x: -x, y: -y};
+                    default: return {x, y};
+                }
+            }));
+            if (!angle || !rotated.length) return rotated;
+            let minX = Infinity, minY = Infinity;
+            for (const path of rotated) for (const pt of path) {
+                minX = Math.min(minX, pt.x);
+                minY = Math.min(minY, pt.y);
+            }
+            return rotated.map(path => path.map(pt => ({x: pt.x - minX, y: pt.y - minY})));
+        }
+
+        function machineBounds(paths) {
+            const bounds = {minX: 0, minY: 0, maxX: 0, maxY: 0};
+            for (const path of machinePaths(paths)) for (const {x, y} of path) {
+                bounds.minX = Math.min(bounds.minX, x);
+                bounds.minY = Math.min(bounds.minY, y);
+                bounds.maxX = Math.max(bounds.maxX, x);
+                bounds.maxY = Math.max(bounds.maxY, y);
+            }
+            return bounds;
+        }
+
+        function buildGCodeText(paths, pageNum) {
+            const zUp = numVal('zUp', -8);
+            const zDown = numVal('zDown', 0);
+            const fDraw = numVal('fDraw', 1500);
+            const fRapid = numVal('fRapid', 3000);
+            const dwell = numVal('dwellTime', 0);
+            const gcode = [`(Pen Plotter | Page ${pageNum})`, 'G90', 'G21'];
+            const up = `G1 Z${zUp.toFixed(2)} F1200`;
+            const xy = (pt, feed) => `G1 X${pt.x.toFixed(3)} Y${pt.y.toFixed(3)} F${feed.toFixed(0)}`;
+            gcode.push(up);
+            for (const path of machinePaths(paths)) {
+                if (path.length < 2) continue;
+                gcode.push(xy(path[0], fRapid), `G1 Z${zDown.toFixed(2)} F1200`);
+                if (dwell > 0) gcode.push(`G4 P${dwell.toFixed(2)}`);
+                for (const pt of path.slice(1)) gcode.push(xy(pt, fDraw));
+                gcode.push(up);
+            }
+            gcode.push(xy({x: 0, y: 0}, fRapid));
+            return gcode.join('\n');
+        }
+
+        function downloadCurrentPageGCode() {
+            const curPagePaths = pagesData[currentPageIndex] ? pagesData[currentPageIndex].paths : [];
+            if (!curPagePaths || curPagePaths.length === 0) {
+                alert("На текущей странице нет текста для печати!");
+                return;
+            }
+
+            const gcode = buildGCodeText(curPagePaths, currentPageIndex + 1);
+            const blob = new Blob([gcode], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `plotter_page_${currentPageIndex + 1}.nc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function downloadAllPagesGCode() {
+            if (!pagesData || pagesData.length === 0) {
+                alert("Нет текста для печати!");
+                return;
+            }
+
+            pagesData.forEach((page, idx) => {
+                if (!page.paths || page.paths.length === 0) return;
+                setTimeout(() => {
+                    const gcode = buildGCodeText(page.paths, idx + 1);
+                    const blob = new Blob([gcode], { type: 'text/plain;charset=utf-8' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `plotter_page_${idx + 1}.nc`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, idx * 350);
+            });
+        }
+
+        function downloadCurrentPageSVG() {
+            const curPagePaths = pagesData[currentPageIndex] ? pagesData[currentPageIndex].paths : [];
+            if (!curPagePaths || curPagePaths.length === 0) {
+                alert("На текущей странице нет текста!");
+                return;
+            }
+
+            const inkColor = document.getElementById('inkColor').value;
+            const penWidth = numVal('penWidth', 0.4);
+
+            let svg = `<?xml version="1.0" standalone="no"?>\n`;
+            svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${paperW}mm" height="${paperH}mm" viewBox="0 0 ${paperW} ${paperH}">\n`;
+            svg += `<g fill="none" stroke="${inkColor}" stroke-width="${penWidth}" stroke-linecap="round" stroke-linejoin="round">\n`;
+
+            curPagePaths.forEach(path => {
+                if (path.length < 2) return;
+                let d = `M ${path[0].x.toFixed(3)} ${path[0].y.toFixed(3)}`;
+                for (let i = 1; i < path.length; i++) {
+                    d += ` L ${path[i].x.toFixed(3)} ${path[i].y.toFixed(3)}`;
+                }
+                svg += `  <path d="${d}" />\n`;
+            });
+
+            svg += `</g>\n</svg>`;
+
+            const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `plotter_page_${currentPageIndex + 1}.svg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- DIRECT USB WEB SERIAL API ---
+        // --- СИСТЕМА АВТОСОХРАНЕНИЯ НАСТРОЕК (LOCALSTORAGE) ---
+        const SETTINGS_KEYS = [
+            'machineRotation', 'fontPreset', 'paperPreset', 'pageRotation', 'pageSpread', 'notebookStyle', 'redMarginMode',
+            'mLeft', 'mRight', 'mTop', 'mBottom', 'gutterWidth', 'paraIndent',
+            'fontSize', 'lineHeight', 'letterSpacing', 'penWidth', 'textAlign', 'inkColor',
+            'jitterIntensity', 'slantAngle', 'waveIntensity',
+            'fDraw', 'fRapid', 'zUp', 'zDown', 'dwellTime', 'tspMode'
+        ];
+
+        function saveAllSettings() {
+            try {
+                const settings = {};
+                SETTINGS_KEYS.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) settings[id] = el.value;
+                });
+
+                const snap = document.getElementById('snapToGrid');
+                if (snap) settings['snapToGrid'] = snap.checked;
+
+                const squeeze = document.getElementById('smartSqueeze');
+                if (squeeze) settings['smartSqueeze'] = squeeze.checked;
+
+                const txt = document.getElementById('textInput');
+                if (txt) settings['textInput'] = txt.value;
+
+                settings['randomSeed'] = randomSeed;
+                settings['showAirMoves'] = showAirMoves;
+
+                localStorage.setItem('plotter_settings_pro', JSON.stringify(settings));
+            } catch(e) {
+                console.warn('Ошибка сохранения настроек:', e);
+            }
+        }
+
+        function loadAllSettings() {
+            try {
+                const raw = localStorage.getItem('plotter_settings_pro');
+                if (!raw) return;
+                const settings = JSON.parse(raw);
+
+                SETTINGS_KEYS.forEach(id => {
+                    if (settings[id] !== undefined) {
+                        const el = document.getElementById(id);
+                        if (el) el.value = settings[id];
+                    }
+                });
+
+                if (settings['snapToGrid'] !== undefined) {
+                    const el = document.getElementById('snapToGrid');
+                    if (el) el.checked = settings['snapToGrid'];
+                }
+
+                if (settings['smartSqueeze'] !== undefined) {
+                    const el = document.getElementById('smartSqueeze');
+                    if (el) el.checked = settings['smartSqueeze'];
+                }
+
+                if (settings['textInput'] !== undefined) {
+                    const el = document.getElementById('textInput');
+                    if (el) el.value = settings['textInput'];
+                }
+
+                if (settings['randomSeed'] !== undefined) {
+                    randomSeed = settings['randomSeed'];
+                    const badge = document.getElementById('seedBadge');
+                    if (badge) badge.innerText = `🎲 #${randomSeed}`;
+                }
+
+                if (settings['showAirMoves'] !== undefined) {
+                    showAirMoves = !!settings['showAirMoves'];
+                    const btn = document.getElementById('btnToggleAir');
+                    if (btn) {
+                        if (showAirMoves) btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    }
+                }
+
+                const jitterEl = document.getElementById('jitterIntensity');
+                const label = document.getElementById('jitterValLabel');
+                if (jitterEl && label) label.innerText = jitterEl.value;
+
+            } catch(e) {
+                console.warn('Ошибка загрузки настроек:', e);
+            }
+        }
+
+        // --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАПУСКЕ ---
+        window.onload = function() {
+            loadAllSettings();
+            updatePaperSize();
+            loadFontPreset(document.getElementById("fontPreset").value);
+        };
+
+        // Глобальный слушатель: сохранять настройки при любом изменении
+        document.addEventListener('input', () => saveAllSettings());
+        document.addEventListener('change', () => saveAllSettings());
+    </script>
+    <script src="plotter-usb.js"></script>
+</body>
+</html>
