@@ -511,9 +511,9 @@
                 <span>🎛️ Шрифт & Сетка</span>
                 <div style="display: flex; gap: 4px;">
                     <label>Почерк <select id="fontPreset" onchange="loadFontPreset(this.value)">
-                        <option value="">Встроенный</option><option value="handwritten">Рукописный</option><option value="van-dijk">Van Dijk · прописной</option>
-                    </select></label>
-                    <button class="btn-ui" style="padding: 2px 8px; font-size: 10px;" id="btnSvgFont" onclick="document.getElementById('svgFontInput').click()">📁 SVG Шрифт / лист</button>
+                        <option value="">Встроенный</option><option value="handwritten.svg">Рукописный</option><option value="van-dijk.svg">Van Dijk · прописной</option>
+                    <optgroup label="Коллекция штриховых шрифтов"><option value="stroke/Custom-Script.svg">Custom-Script</option><option value="stroke/Custom-Square Italic.svg">Custom-Square Italic</option><option value="stroke/Custom-Square Normal.svg">Custom-Square Normal</option><option value="stroke/Hershey-Astrology.svg">Hershey-Astrology</option><option value="stroke/Hershey-Cyrillic.svg">Hershey-Cyrillic</option><option value="stroke/Hershey-Gothic English.svg">Hershey-Gothic English</option><option value="stroke/Hershey-Gothic German.svg">Hershey-Gothic German</option><option value="stroke/Hershey-Gothic Italian.svg">Hershey-Gothic Italian</option><option value="stroke/Hershey-Greek 1-stroke.svg">Hershey-Greek 1-stroke</option><option value="stroke/Hershey-Greek medium.svg">Hershey-Greek medium</option><option value="stroke/Hershey-Japanese.svg">Hershey-Japanese</option><option value="stroke/Hershey-Markers.svg">Hershey-Markers</option><option value="stroke/Hershey-Math (lower).svg">Hershey-Math (lower)</option><option value="stroke/Hershey-Math (upper).svg">Hershey-Math (upper)</option><option value="stroke/Hershey-Meteorology.svg">Hershey-Meteorology</option><option value="stroke/Hershey-Music.svg">Hershey-Music</option><option value="stroke/Hershey-Sans 1-stroke-smoothed.svg">Hershey-Sans 1-stroke-smoothed</option><option value="stroke/Hershey-Sans 1-stroke.svg">Hershey-Sans 1-stroke</option><option value="stroke/Hershey-Sans bold.svg">Hershey-Sans bold</option><option value="stroke/Hershey-Script 1-stroke (alt).svg">Hershey-Script 1-stroke (alt)</option><option value="stroke/Hershey-Script 1-stroke.svg">Hershey-Script 1-stroke</option><option value="stroke/Hershey-Script medium.svg">Hershey-Script medium</option><option value="stroke/Hershey-Serif bold italic.svg">Hershey-Serif bold italic</option><option value="stroke/Hershey-Serif bold.svg">Hershey-Serif bold</option><option value="stroke/Hershey-Serif medium italic.svg">Hershey-Serif medium italic</option><option value="stroke/Hershey-Serif medium.svg">Hershey-Serif medium</option><option value="stroke/Hershey-Symbolic.svg">Hershey-Symbolic</option></optgroup><optgroup id="localFontGroup" label="Мои шрифты"></optgroup></select></label><small id="fontStatus" role="status"></small>
+                    <button class="btn-ui" style="padding: 2px 8px; font-size: 10px;" id="btnSvgFont" onclick="document.getElementById('svgFontInput').click()">Загрузить SVG</button>
                     <button class="btn-ui" id="btnResetFont" style="display: none; padding: 2px 6px; font-size: 10px;" onclick="resetDefaultFont()" title="Сбросить шрифт">🔄</button>
                 </div>
             </div>
@@ -564,7 +564,7 @@
                     <input type="checkbox" id="smartSqueeze" checked onchange="render()"> Переносы & Вписывание
                 </label>
             </div>
-            <input type="file" id="svgFontInput" accept=".svg" onchange="handleSVGFontUpload(event)">
+            <input type="file" id="svgFontInput" accept=".svg,image/svg+xml" multiple onchange="importLocalFonts(this)">
         </div>
 
         <!-- СЕКЦИЯ 3: ЖИВОЙ ПОЧЕРК -->
@@ -1035,7 +1035,7 @@
                     for (let s = 1; s <= steps; s++) {
                         const t = s / steps;
                         const bx = Math.pow(1-t, 3)*curX + 3*Math.pow(1-t, 2)*t*x1 + 3*(1-t)*Math.pow(t, 2)*x2 + Math.pow(t, 3)*x;
-                        const by = Math.pow(1-t, 3)*curY + 3*Math.pow(1-t, 2)*t*y1 + 3*(1-t)*Math.pow(t, 2)*x2 + Math.pow(t, 3)*x;
+                        const by = Math.pow(1-t, 3)*curY + 3*Math.pow(1-t, 2)*t*y1 + 3*(1-t)*Math.pow(t, 2)*y2 + Math.pow(t, 3)*y;
                         currentStroke.push({ x: bx, y: by });
                     }
                     lastCtrlX = x2; lastCtrlY = y2;
@@ -1054,7 +1054,7 @@
                     for (let s = 1; s <= steps; s++) {
                         const t = s / steps;
                         const bx = Math.pow(1-t, 3)*curX + 3*Math.pow(1-t, 2)*t*x1 + 3*(1-t)*Math.pow(t, 2)*x2 + Math.pow(t, 3)*x;
-                        const by = Math.pow(1-t, 3)*curY + 3*Math.pow(1-t, 2)*t*y1 + 3*(1-t)*Math.pow(t, 2)*x2 + Math.pow(t, 3)*x;
+                        const by = Math.pow(1-t, 3)*curY + 3*Math.pow(1-t, 2)*t*y1 + 3*(1-t)*Math.pow(t, 2)*y2 + Math.pow(t, 3)*y;
                         currentStroke.push({ x: bx, y: by });
                     }
                     lastCtrlX = x2; lastCtrlY = y2;
@@ -1214,77 +1214,55 @@
             return { font: newFont, widths: newWidths, count: glyphList.length };
         }
 
-        function handleSVGFontUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        function parseFontSVG(text) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(text, "image/svg+xml");
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const text = e.target.result;
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(text, "image/svg+xml");
-
-                    const glyphs = xmlDoc.querySelectorAll("glyph");
-                    if (glyphs.length > 0) {
-                        const fontFace = xmlDoc.querySelector("font-face");
-                        const fontTag = xmlDoc.querySelector("font");
-                        let unitsPerEm = 1000, ascent = 800, defaultHorizAdv = 1000;
-                        if (fontFace) {
-                            if (fontFace.getAttribute("units-per-em")) unitsPerEm = parseFloat(fontFace.getAttribute("units-per-em")) || 1000;
-                            if (fontFace.getAttribute("ascent")) ascent = parseFloat(fontFace.getAttribute("ascent")) || 800;
-                        }
-                        if (fontTag && fontTag.getAttribute("horiz-adv-x")) defaultHorizAdv = parseFloat(fontTag.getAttribute("horiz-adv-x")) || unitsPerEm;
-
-                        const normScale = ascent || (unitsPerEm * 0.8) || 1000;
-                        const newFont = {}, newWidths = {};
-                        let count = 0;
-
-                        glyphs.forEach(glyph => {
-                            let unicode = glyph.getAttribute("unicode");
-                            const glyphName = glyph.getAttribute("glyph-name");
-                            const d = glyph.getAttribute("d");
-                            const horizAdv = glyph.getAttribute("horiz-adv-x") ? (parseFloat(glyph.getAttribute("horiz-adv-x")) || defaultHorizAdv) : defaultHorizAdv;
-
-                            if (!unicode && glyphName) {
-                                if (/^uni[0-9a-fA-F]{4}$/.test(glyphName)) unicode = String.fromCharCode(parseInt(glyphName.substring(3), 16));
-                                else if (/^u[0-9a-fA-F]{4}$/.test(glyphName)) unicode = String.fromCharCode(parseInt(glyphName.substring(1), 16));
-                                else if (glyphName === 'space') unicode = ' ';
-                            }
-
-                            if (!unicode || !d) return;
-                            let rawPaths = parseSVGPathD(d);
-                            let normPaths = rawPaths.map(stroke => stroke.map(pt => [pt.x / normScale, pt.y / normScale]));
-
-                            if (normPaths.length > 0) {
-                                newFont[unicode] = normPaths;
-                                newWidths[unicode] = Math.max(0.2, (horizAdv / normScale));
-                                count++;
-                            }
-                        });
-
-                        customFont = newFont;
-                        customWidths = newWidths;
-                        updateFontUI(`✅ ${file.name.substring(0, 8)}... (${count} гл.)`);
-                        return;
-                    }
-
-                    const sheetResult = parseTaggedOrSheetSVG(xmlDoc);
-                    if (sheetResult && sheetResult.count > 0) {
-                        customFont = sheetResult.font;
-                        customWidths = sheetResult.widths;
-                        updateFontUI(`✅ Лист (${sheetResult.count} б.)`);
-                        alert(`Шрифт "${file.name}" успешно загружен! Распознано букв: ${sheetResult.count}`);
-                        return;
-                    }
-
-                    alert("Не удалось распознать буквы в SVG. Убедитесь, что группы названы буквами в Inkscape.");
-                } catch (err) {
-                    console.error(err);
-                    alert("Ошибка разбора SVG: " + err.message);
+            if (xmlDoc.querySelector("parsererror")) throw new Error("Некорректный SVG.");
+            const glyphs = xmlDoc.querySelectorAll("glyph");
+            if (glyphs.length > 0) {
+                const fontFace = xmlDoc.querySelector("font-face");
+                const fontTag = xmlDoc.querySelector("font");
+                let unitsPerEm = 1000, ascent = 800, defaultHorizAdv = 1000;
+                if (fontFace) {
+                    if (fontFace.getAttribute("units-per-em")) unitsPerEm = parseFloat(fontFace.getAttribute("units-per-em")) || 1000;
+                    if (fontFace.getAttribute("ascent")) ascent = parseFloat(fontFace.getAttribute("ascent")) || 800;
                 }
-            };
-            reader.readAsText(file);
+                if (fontTag && fontTag.getAttribute("horiz-adv-x")) defaultHorizAdv = parseFloat(fontTag.getAttribute("horiz-adv-x")) || unitsPerEm;
+
+                const normScale = Math.abs(ascent) || (unitsPerEm * 0.8) || 1000;
+                const newFont = {}, newWidths = {};
+                let count = 0;
+
+                glyphs.forEach(glyph => {
+                    let unicode = glyph.getAttribute("unicode");
+                    const glyphName = glyph.getAttribute("glyph-name");
+                    const d = glyph.getAttribute("d");
+                    const horizAdv = glyph.getAttribute("horiz-adv-x") ? (parseFloat(glyph.getAttribute("horiz-adv-x")) || defaultHorizAdv) : defaultHorizAdv;
+
+                    if (!unicode && glyphName) {
+                        if (/^uni[0-9a-fA-F]{4}$/.test(glyphName)) unicode = String.fromCharCode(parseInt(glyphName.substring(3), 16));
+                        else if (/^u[0-9a-fA-F]{4}$/.test(glyphName)) unicode = String.fromCharCode(parseInt(glyphName.substring(1), 16));
+                        else if (glyphName === 'space') unicode = ' ';
+                    }
+
+                    if (!unicode || !d) return;
+                    let rawPaths = parseSVGPathD(d);
+                    let normPaths = rawPaths.map(stroke => stroke.map(pt => [pt.x / normScale, pt.y / normScale]));
+
+                    if (normPaths.length > 0) {
+                        newFont[unicode] = normPaths;
+                        newWidths[unicode] = Math.max(0.2, (horizAdv / normScale));
+                        count++;
+                    }
+                });
+
+                if (count) return {font: newFont, widths: newWidths, count};
+            }
+
+            const sheetResult = parseTaggedOrSheetSVG(xmlDoc);
+            if (sheetResult?.count) return sheetResult;
+            throw new Error('В SVG не найдены траектории букв.');
         }
 
         function updateFontUI(text) {
@@ -1296,12 +1274,13 @@
         }
 
         function resetDefaultFont() {
+            document.getElementById('fontStatus').textContent = '';
             document.getElementById('fontPreset').value = '';
             customFont = null;
             customWidths = {};
             const btn = document.getElementById('btnSvgFont');
             const btnReset = document.getElementById('btnResetFont');
-            if (btn) { btn.innerText = `📁 SVG Шрифт / лист`; btn.classList.remove('active'); }
+            if (btn) { btn.innerText = `Загрузить SVG`; btn.classList.remove('active'); }
             if (btnReset) btnReset.style.display = 'none';
             document.getElementById('svgFontInput').value = '';
             render();
@@ -2103,14 +2082,15 @@
         // --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАПУСКЕ ---
         window.onload = function() {
             loadAllSettings();
+            restoreFonts();
             updatePaperSize();
-            loadFontPreset(document.getElementById("fontPreset").value);
         };
 
         // Глобальный слушатель: сохранять настройки при любом изменении
         document.addEventListener('input', () => saveAllSettings());
         document.addEventListener('change', () => saveAllSettings());
     </script>
+    <script src="plotter-fonts.js"></script>
     <script src="plotter-usb.js"></script>
     <script src="plotter-motion.js"></script>
 </body>

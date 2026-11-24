@@ -9,27 +9,6 @@ let held = false;
 let connecting = false;
 let readTask;
 
-async function loadFontPreset(name) {
-    if (!['handwritten', 'van-dijk'].includes(name)) {
-        if (!name) resetDefaultFont();
-        return;
-    }
-    try {
-        const response = await fetch(`fonts/${name}.svg`);
-        if (!response.ok) throw new Error('файл не найден');
-        const file = new File([await response.blob()], `${name}.svg`);
-        if (document.getElementById('fontPreset').value !== name) return;
-        // Reuse the upstream importer for built-in and uploaded SVG fonts.
-        const input = document.getElementById('svgFontInput');
-        const transfer = new DataTransfer();
-        transfer.items.add(file);
-        input.files = transfer.files;
-        input.dispatchEvent(new Event('change'));
-    } catch (error) {
-        usbStatus.textContent = 'Ошибка загрузки шрифта: ' + error.message;
-    }
-}
-
 function updateUSB() {
     usbButton.textContent = serialWriter ? 'Отключить USB' : 'Подключить USB';
     usbButton.disabled = running || connecting || Boolean(window.jogBusy);
