@@ -373,6 +373,13 @@
         }
 
         #svgFontInput { display: none; }
+     
+        #motionPanel { position: fixed; inset: 65px 16px auto auto; width: min(470px, calc(100vw - 32px)); max-height: calc(100vh - 80px); overflow: auto; z-index: 90; padding: 16px; border: 1px solid #536079; border-radius: 12px; background: #141a28; color: #f0f3fa; box-shadow: 0 12px 32px #0008; }
+        #motionPanel header, .motion-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+        #motionPanel canvas { height: auto; background:#0b101c; border-radius:8px; margin:10px 0; }
+        #jogControls { margin-top:12px; border:1px solid #536079; border-radius:8px; padding:10px; }
+        #jogControls button { min-width:48px; min-height:38px; }
+        .jog-row { display:flex; gap:8px; margin:8px 0; flex-wrap:wrap; }
     </style>
 </head>
 <body>
@@ -391,9 +398,32 @@
             <button class="btn-usb" id="btnUsbSerial" onclick="toggleUSBConnection()" title="Прямая печать через Web Serial API">Подключить USB</button>
             <button class="btn-primary" id="sendJob" onclick="sendJob()" disabled>Писать страницу</button>
             <button class="btn-ui" id="holdJob" onclick="holdJob()" disabled>Пауза</button>
+            <button class="btn-ui" onclick="showMotion(true)" aria-controls="motionPanel">Головка / джойстик</button>
             <span id="usbStatus" role="status" style="font-size:12px">USB отключён</span>
         </div>
     </div>
+
+    <section id="motionPanel" hidden aria-label="Движение головки">
+        <header><strong>Движение головки</strong><button class="btn-ui" onclick="showMotion(false)">Закрыть</button></header>
+        <p id="headReadout" role="status">Подключи USB для отображения позиции.</p>
+        <canvas id="motionCanvas" width="440" height="280" aria-label="Карта траектории в рабочих координатах"></canvas>
+        <div class="motion-actions"><small>Серый — задание · зелёный — пройденный путь</small><button class="btn-ui" onclick="clearMotion()">Очистить след</button></div>
+        <details id="jogControls" open><summary>Ручное управление</summary>
+            <div class="jog-row">
+                <label>Шаг XY <select id="jogStep"><option>0.1</option><option selected>1</option><option>5</option><option>10</option></select> мм</label>
+                <label>Шаг Z <select id="jogZStep"><option selected>0.1</option><option>1</option><option>2</option></select> мм</label>
+            </div>
+            <div class="jog-row">
+                <button class="btn-ui" data-jog="X,-1">← X−</button><button class="btn-ui" data-jog="X,1">X+ →</button>
+                <button class="btn-ui" data-jog="Y,1">↑ Y+</button><button class="btn-ui" data-jog="Y,-1">↓ Y−</button>
+            </div>
+            <div class="jog-row">
+                <button class="btn-ui" data-jog="Z,-1">Z−</button><button class="btn-ui" data-jog="Z,1">Z+</button>
+                <button class="btn-ui" id="cancelJog" disabled>Стоп джога</button>
+            </div>
+            <small>Один клик — один шаг. Джойстик доступен, когда плоттер свободен.</small>
+        </details>
+    </section>
 
     <!-- WORD-STYLE HORIZONTAL TOP RIBBON BAR -->
     <div class="ribbon-bar">
@@ -1851,6 +1881,7 @@
                 document.getElementById('statAirDist').innerText = `${airM} м`;
                 document.getElementById('statTime').innerText = `~${mins} мин ${secs} сек`;
 
+                window.refreshMotion?.();
                 // Автосохранение настроек при каждом рендере
                 saveAllSettings();
 
@@ -2081,5 +2112,6 @@
         document.addEventListener('change', () => saveAllSettings());
     </script>
     <script src="plotter-usb.js"></script>
+    <script src="plotter-motion.js"></script>
 </body>
 </html>

@@ -32,10 +32,11 @@ async function loadFontPreset(name) {
 
 function updateUSB() {
     usbButton.textContent = serialWriter ? 'Отключить USB' : 'Подключить USB';
-    usbButton.disabled = running || connecting;
-    sendButton.disabled = !serialWriter || running || connecting;
+    usbButton.disabled = running || connecting || Boolean(window.jogBusy);
+    sendButton.disabled = !serialWriter || running || connecting || Boolean(window.jogBusy);
     holdButton.disabled = !running || connecting;
     holdButton.textContent = held ? 'Продолжить' : 'Пауза';
+    window.refreshMotion?.();
 }
 
 async function readUSB(reader) {
@@ -49,6 +50,7 @@ async function readUSB(reader) {
             const lines = buffer.split('\n');
             buffer = lines.pop();
             for (const line of lines.map(text => text.trim())) {
+                if (line.startsWith('<')) window.trackGRBL?.(line);
                 if (/^(error:|ALARM:|Grbl )/i.test(line)) waiting?.reject(new Error(line));
                 else if (waiting?.match(line)) waiting.resolve(line);
             }
@@ -87,6 +89,7 @@ async function closeUSB() {
     serialWriter = null;
     serialPort = null;
     readTask = null;
+    window.resetMotionConnection?.();
 }
 
 async function toggleUSBConnection() {
@@ -134,7 +137,7 @@ async function holdJob() {
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function sendJob() {
-    if (running || connecting || !serialWriter) return;
+    if (running || connecting || window.jogBusy || !serialWriter) return;
     const paths = pagesData[currentPageIndex]?.paths;
     if (!paths?.length) {
         usbStatus.textContent = 'На странице нет текста.';
