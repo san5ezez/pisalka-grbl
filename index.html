@@ -1242,9 +1242,24 @@
             return 0.65;
         }
 
+        const MATH_GLYPHS = {
+            '→': [[[0,.45],[.92,.45]],[[.58,.72],[.92,.45],[.58,.18]]],
+            '−': [[[.1,.45],[.9,.45]]],
+            '±': [[[.12,.66],[.88,.66]],[[.5,.39],[.5,.92]],[[.12,.12],[.88,.12]]],
+            '√': [[[0,.4],[.21,.5],[.39,.06],[.65,.94],[1,.94]]],
+            'π': [[[.04,.69],[.96,.69]],[[.29,.69],[.22,0]],[[.72,.69],[.71,.1],[.9,.01]]],
+            '•': [[[.45,.46],[.56,.46]]]
+        };
+
         function getCharGlyph(ch) {
             if (customFont && customFont[ch]) return customFont[ch];
             if (DEFAULT_FONT[ch]) return DEFAULT_FONT[ch];
+            if (Object.hasOwn(MATH_GLYPHS, ch)) return MATH_GLYPHS[ch];
+            const digit = '⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(ch);
+            if (digit >= 0) {
+                const glyph = DEFAULT_FONT[String(digit)] || [];
+                return glyph.map(path => path.map(([x,y]) => [x*.72,y*.62+.48]));
+            }
             return DEFAULT_FONT[' '];
         }
 
@@ -1486,6 +1501,12 @@
                 const spaceWidth = (fontSize * getCharWidth(' ')) + letterSpacing;
 
                 paragraphs.forEach(para => {
+                    const block = docxBlock(para);
+                    if (block) {
+                        const layout = layoutDocxBlock(block, maxLineWidth, Math.max(1, maxLinesPerPage * effectiveLineHeight - 2));
+                        allFormattedLines.push({layout, slots: Math.max(1, Math.ceil((layout.height + 2) / effectiveLineHeight))});
+                        return;
+                    }
                     if (para.trim() === '') {
                         allFormattedLines.push({ words: [], isFirstLine: false, isLastInPara: true, squeezeFactor: 1.0 });
                         return;
@@ -1586,9 +1607,16 @@
                 });
 
                 // МНОГОСТРАНИЧНОСТЬ
-                pagesData = [];
-                for (let i = 0; i < allFormattedLines.length; i += maxLinesPerPage) {
-                    pagesData.push(allFormattedLines.slice(i, i + maxLinesPerPage));
+                pagesData = [[]];
+                let usedSlots = 0;
+                for (const line of allFormattedLines) {
+                    const slots = line.slots || 1;
+                    if (usedSlots && usedSlots + slots > maxLinesPerPage) {
+                        pagesData.push([]);
+                        usedSlots = 0;
+                    }
+                    pagesData.at(-1).push(line);
+                    usedSlots += slots;
                 }
                 if (pagesData.length === 0) pagesData.push([]);
 
@@ -1608,6 +1636,21 @@
                 let totalCharsOnPage = 0;
 
                 currentLines.forEach((lineObj, lineIdx) => {
+                    if (lineObj.layout) {
+                        const top = currentY - fontSize;
+                        for (const path of lineObj.layout.paths) {
+                            const stroke = path.map(([x,y]) => {
+                                const px = mL + x, py = top + y;
+                                return isPageRotated180
+                                    ? {x: paperW - px, y: paperH - py, mmY: py}
+                                    : {x: px, y: py, mmY: paperH - py};
+                            });
+                            stroke.lineIndex = lineIdx;
+                            rawPaths.push(stroke);
+                        }
+                        currentY += lineObj.slots * effectiveLineHeight;
+                        return;
+                    }
                     const words = lineObj.words;
                     const squeeze = lineObj.squeezeFactor || 1.0;
                     if (words.length === 0) {
@@ -1894,10 +1937,15 @@
                 return;
             }
 
-            pagesData.forEach((page, idx) => {
-                if (!page.paths || page.paths.length === 0) return;
+            const originalPage = currentPageIndex;
+            const count = pagesData.length;
+            for (let idx = 0; idx < count; idx++) {
+                currentPageIndex = idx;
+                render();
+                const paths = pagesData[idx]?.paths;
+                if (!paths?.length) continue;
+                const gcode = buildGCodeText(paths, idx + 1);
                 setTimeout(() => {
-                    const gcode = buildGCodeText(page.paths, idx + 1);
                     const blob = new Blob([gcode], { type: 'text/plain;charset=utf-8' });
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
@@ -1906,7 +1954,9 @@
                     link.click();
                     document.body.removeChild(link);
                 }, idx * 350);
-            });
+            }
+            currentPageIndex = originalPage;
+            render();
         }
 
         // --- СИСТЕМА АВТОСОХРАНЕНИЯ НАСТРОЕК (LOCALSTORAGE) ---
@@ -2008,6 +2058,6 @@
         document.addEventListener('change', () => saveAllSettings());
     </script>
     <script src="plotter-fonts.js?v=nc1"></script>
-    <script src="plotter-docx.js"></script>
+    <script src="plotter-docx.js?v=2"></script>
 </body>
 </html>
