@@ -231,24 +231,6 @@
             transform: translateY(-1px);
         }
 
-        .btn-usb {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            color: #fff;
-            border: none;
-            padding: 6px 12px;
-            border-radius: var(--radius-sm);
-            font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-        }
-        .btn-usb.connected {
-            background: linear-gradient(135deg, #10b981, #059669);
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
 
         /* --- APP MAIN LAYOUT --- */
         .app-layout {
@@ -374,12 +356,6 @@
 
         #svgFontInput { display: none; }
      
-        #motionPanel { position: fixed; inset: 65px 16px auto auto; width: min(470px, calc(100vw - 32px)); max-height: calc(100vh - 80px); overflow: auto; z-index: 90; padding: 16px; border: 1px solid #536079; border-radius: 12px; background: #141a28; color: #f0f3fa; box-shadow: 0 12px 32px #0008; }
-        #motionPanel header, .motion-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-        #motionPanel canvas { height: auto; background:#0b101c; border-radius:8px; margin:10px 0; }
-        #jogControls { margin-top:12px; border:1px solid #536079; border-radius:8px; padding:10px; }
-        #jogControls button { min-width:48px; min-height:38px; }
-        .jog-row { display:flex; gap:8px; margin:8px 0; flex-wrap:wrap; }
     </style>
 </head>
 <body>
@@ -393,37 +369,9 @@
 
         <div class="quick-actions">
             <button class="btn-ui" id="btnToggleAir" onclick="toggleAirMoves()" title="Показать траектории холостого хода">👁 Траектории</button>
-            <button class="btn-ui" onclick="downloadCurrentPageSVG()" title="Экспорт страницы в векторный SVG">📐 SVG</button>
             <button class="btn-primary" onclick="downloadCurrentPageGCode()" title="Скачать G-Code (.NC)">💾 Скачать .NC</button>
-            <button class="btn-usb" id="btnUsbSerial" onclick="toggleUSBConnection()" title="Прямая печать через Web Serial API">Подключить USB</button>
-            <button class="btn-primary" id="sendJob" onclick="sendJob()" disabled>Писать страницу</button>
-            <button class="btn-ui" id="holdJob" onclick="holdJob()" disabled>Пауза</button>
-            <button class="btn-ui" onclick="showMotion(true)" aria-controls="motionPanel">Головка / джойстик</button>
-            <span id="usbStatus" role="status" style="font-size:12px">USB отключён</span>
         </div>
     </div>
-
-    <section id="motionPanel" hidden aria-label="Движение головки">
-        <header><strong>Движение головки</strong><button class="btn-ui" onclick="showMotion(false)">Закрыть</button></header>
-        <p id="headReadout" role="status">Подключи USB для отображения позиции.</p>
-        <canvas id="motionCanvas" width="440" height="280" aria-label="Карта траектории в рабочих координатах"></canvas>
-        <div class="motion-actions"><small>Серый — задание · зелёный — пройденный путь</small><button class="btn-ui" onclick="clearMotion()">Очистить след</button></div>
-        <details id="jogControls" open><summary>Ручное управление</summary>
-            <div class="jog-row">
-                <label>Шаг XY <select id="jogStep"><option>0.1</option><option selected>1</option><option>5</option><option>10</option></select> мм</label>
-                <label>Шаг Z <select id="jogZStep"><option selected>0.1</option><option>1</option><option>2</option></select> мм</label>
-            </div>
-            <div class="jog-row">
-                <button class="btn-ui" data-jog="X,-1">← X−</button><button class="btn-ui" data-jog="X,1">X+ →</button>
-                <button class="btn-ui" data-jog="Y,1">↑ Y+</button><button class="btn-ui" data-jog="Y,-1">↓ Y−</button>
-            </div>
-            <div class="jog-row">
-                <button class="btn-ui" data-jog="Z,-1">Z−</button><button class="btn-ui" data-jog="Z,1">Z+</button>
-                <button class="btn-ui" id="cancelJog" disabled>Стоп джога</button>
-            </div>
-            <small>Один клик — один шаг. Джойстик доступен, когда плоттер свободен.</small>
-        </details>
-    </section>
 
     <!-- WORD-STYLE HORIZONTAL TOP RIBBON BAR -->
     <div class="ribbon-bar">
@@ -512,7 +460,7 @@
                 <div style="display: flex; gap: 4px;">
                     <label>Почерк <select id="fontPreset" onchange="loadFontPreset(this.value)">
                         <option value="">Встроенный</option><option value="handwritten.svg">Рукописный</option><option value="van-dijk.svg">Van Dijk · прописной</option>
-                    <optgroup label="Коллекция штриховых шрифтов"><option value="stroke/Custom-Script.svg">Custom-Script</option><option value="stroke/Custom-Square Italic.svg">Custom-Square Italic</option><option value="stroke/Custom-Square Normal.svg">Custom-Square Normal</option><option value="stroke/Hershey-Astrology.svg">Hershey-Astrology</option><option value="stroke/Hershey-Cyrillic.svg">Hershey-Cyrillic</option><option value="stroke/Hershey-Gothic English.svg">Hershey-Gothic English</option><option value="stroke/Hershey-Gothic German.svg">Hershey-Gothic German</option><option value="stroke/Hershey-Gothic Italian.svg">Hershey-Gothic Italian</option><option value="stroke/Hershey-Greek 1-stroke.svg">Hershey-Greek 1-stroke</option><option value="stroke/Hershey-Greek medium.svg">Hershey-Greek medium</option><option value="stroke/Hershey-Japanese.svg">Hershey-Japanese</option><option value="stroke/Hershey-Markers.svg">Hershey-Markers</option><option value="stroke/Hershey-Math (lower).svg">Hershey-Math (lower)</option><option value="stroke/Hershey-Math (upper).svg">Hershey-Math (upper)</option><option value="stroke/Hershey-Meteorology.svg">Hershey-Meteorology</option><option value="stroke/Hershey-Music.svg">Hershey-Music</option><option value="stroke/Hershey-Sans 1-stroke-smoothed.svg">Hershey-Sans 1-stroke-smoothed</option><option value="stroke/Hershey-Sans 1-stroke.svg">Hershey-Sans 1-stroke</option><option value="stroke/Hershey-Sans bold.svg">Hershey-Sans bold</option><option value="stroke/Hershey-Script 1-stroke (alt).svg">Hershey-Script 1-stroke (alt)</option><option value="stroke/Hershey-Script 1-stroke.svg">Hershey-Script 1-stroke</option><option value="stroke/Hershey-Script medium.svg">Hershey-Script medium</option><option value="stroke/Hershey-Serif bold italic.svg">Hershey-Serif bold italic</option><option value="stroke/Hershey-Serif bold.svg">Hershey-Serif bold</option><option value="stroke/Hershey-Serif medium italic.svg">Hershey-Serif medium italic</option><option value="stroke/Hershey-Serif medium.svg">Hershey-Serif medium</option><option value="stroke/Hershey-Symbolic.svg">Hershey-Symbolic</option></optgroup><optgroup id="localFontGroup" label="Мои шрифты"></optgroup></select></label><small id="fontStatus" role="status"></small>
+                    <option value="stroke/Hershey-Cyrillic.svg">Hershey-Cyrillic</option><optgroup label="Штриховые шрифты · в основном латиница"><option value="stroke/Custom-Script.svg">Custom-Script</option><option value="stroke/Custom-Square Italic.svg">Custom-Square Italic</option><option value="stroke/Custom-Square Normal.svg">Custom-Square Normal</option><option value="stroke/Hershey-Astrology.svg">Hershey-Astrology</option><option value="stroke/Hershey-Gothic English.svg">Hershey-Gothic English</option><option value="stroke/Hershey-Gothic German.svg">Hershey-Gothic German</option><option value="stroke/Hershey-Gothic Italian.svg">Hershey-Gothic Italian</option><option value="stroke/Hershey-Greek 1-stroke.svg">Hershey-Greek 1-stroke</option><option value="stroke/Hershey-Greek medium.svg">Hershey-Greek medium</option><option value="stroke/Hershey-Japanese.svg">Hershey-Japanese</option><option value="stroke/Hershey-Markers.svg">Hershey-Markers</option><option value="stroke/Hershey-Math (lower).svg">Hershey-Math (lower)</option><option value="stroke/Hershey-Math (upper).svg">Hershey-Math (upper)</option><option value="stroke/Hershey-Meteorology.svg">Hershey-Meteorology</option><option value="stroke/Hershey-Music.svg">Hershey-Music</option><option value="stroke/Hershey-Sans 1-stroke-smoothed.svg">Hershey-Sans 1-stroke-smoothed</option><option value="stroke/Hershey-Sans 1-stroke.svg">Hershey-Sans 1-stroke</option><option value="stroke/Hershey-Sans bold.svg">Hershey-Sans bold</option><option value="stroke/Hershey-Script 1-stroke (alt).svg">Hershey-Script 1-stroke (alt)</option><option value="stroke/Hershey-Script 1-stroke.svg">Hershey-Script 1-stroke</option><option value="stroke/Hershey-Script medium.svg">Hershey-Script medium</option><option value="stroke/Hershey-Serif bold italic.svg">Hershey-Serif bold italic</option><option value="stroke/Hershey-Serif bold.svg">Hershey-Serif bold</option><option value="stroke/Hershey-Serif medium italic.svg">Hershey-Serif medium italic</option><option value="stroke/Hershey-Serif medium.svg">Hershey-Serif medium</option><option value="stroke/Hershey-Symbolic.svg">Hershey-Symbolic</option></optgroup><optgroup id="localFontGroup" label="Мои шрифты"></optgroup></select></label><small id="fontStatus" role="status"></small>
                     <button class="btn-ui" style="padding: 2px 8px; font-size: 10px;" id="btnSvgFont" onclick="document.getElementById('svgFontInput').click()">Загрузить SVG</button>
                     <button class="btn-ui" id="btnResetFont" style="display: none; padding: 2px 6px; font-size: 10px;" onclick="resetDefaultFont()" title="Сбросить шрифт">🔄</button>
                 </div>
@@ -859,8 +807,6 @@
         let pagesData = [];
         let currentPageIndex = 0;
 
-        let serialPort = null;
-        let serialWriter = null;
 
 
         function numVal(id, fallback) {
@@ -1860,8 +1806,8 @@
                 document.getElementById('statAirDist').innerText = `${airM} м`;
                 document.getElementById('statTime').innerText = `~${mins} мин ${secs} сек`;
 
-                window.refreshMotion?.();
                 // Автосохранение настроек при каждом рендере
+                updateFontCoverage();
                 saveAllSettings();
 
             } catch (err) {
@@ -1920,6 +1866,7 @@
         }
 
         function downloadCurrentPageGCode() {
+            if (fontLoading) return;
             const curPagePaths = pagesData[currentPageIndex] ? pagesData[currentPageIndex].paths : [];
             if (!curPagePaths || curPagePaths.length === 0) {
                 alert("На текущей странице нет текста для печати!");
@@ -1937,6 +1884,7 @@
         }
 
         function downloadAllPagesGCode() {
+            if (fontLoading) return;
             if (!pagesData || pagesData.length === 0) {
                 alert("Нет текста для печати!");
                 return;
@@ -1957,41 +1905,6 @@
             });
         }
 
-        function downloadCurrentPageSVG() {
-            const curPagePaths = pagesData[currentPageIndex] ? pagesData[currentPageIndex].paths : [];
-            if (!curPagePaths || curPagePaths.length === 0) {
-                alert("На текущей странице нет текста!");
-                return;
-            }
-
-            const inkColor = document.getElementById('inkColor').value;
-            const penWidth = numVal('penWidth', 0.4);
-
-            let svg = `<?xml version="1.0" standalone="no"?>\n`;
-            svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${paperW}mm" height="${paperH}mm" viewBox="0 0 ${paperW} ${paperH}">\n`;
-            svg += `<g fill="none" stroke="${inkColor}" stroke-width="${penWidth}" stroke-linecap="round" stroke-linejoin="round">\n`;
-
-            curPagePaths.forEach(path => {
-                if (path.length < 2) return;
-                let d = `M ${path[0].x.toFixed(3)} ${path[0].y.toFixed(3)}`;
-                for (let i = 1; i < path.length; i++) {
-                    d += ` L ${path[i].x.toFixed(3)} ${path[i].y.toFixed(3)}`;
-                }
-                svg += `  <path d="${d}" />\n`;
-            });
-
-            svg += `</g>\n</svg>`;
-
-            const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `plotter_page_${currentPageIndex + 1}.svg`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- DIRECT USB WEB SERIAL API ---
         // --- СИСТЕМА АВТОСОХРАНЕНИЯ НАСТРОЕК (LOCALSTORAGE) ---
         const SETTINGS_KEYS = [
             'machineRotation', 'fontPreset', 'paperPreset', 'pageRotation', 'pageSpread', 'notebookStyle', 'redMarginMode',
@@ -2090,8 +2003,6 @@
         document.addEventListener('input', () => saveAllSettings());
         document.addEventListener('change', () => saveAllSettings());
     </script>
-    <script src="plotter-fonts.js"></script>
-    <script src="plotter-usb.js"></script>
-    <script src="plotter-motion.js"></script>
+    <script src="plotter-fonts.js?v=nc1"></script>
 </body>
 </html>

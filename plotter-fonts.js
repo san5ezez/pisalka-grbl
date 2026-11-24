@@ -4,6 +4,24 @@ const localFontGroup = document.getElementById('localFontGroup');
 const localFonts = new Map();
 const fontCache = new Map();
 let fontRequest = 0;
+let fontLoading = false;
+
+function setFontLoading(loading) {
+    fontLoading = loading;
+    for (const button of document.querySelectorAll('[onclick="downloadCurrentPageGCode()"], [onclick="downloadAllPagesGCode()"]')) {
+        button.disabled = loading;
+    }
+}
+
+function updateFontCoverage() {
+    if (fontLoading || !customFont) return;
+    const letters = [...document.getElementById('textInput').value].filter(ch => /\p{L}/u.test(ch));
+    const covered = letters.filter(ch => Object.hasOwn(customFont, ch)).length;
+    fontMessage.textContent = letters.length && covered < letters.length
+        ? `Буквы выбранного шрифта: ${covered} из ${letters.length}. Остальные — встроенным.`
+        : 'Выбранный шрифт применён.';
+}
+
 
 function addLocalFont(name, source) {
     const key = 'local:' + name;
@@ -30,11 +48,13 @@ function restoreFonts() {
 async function loadFontPreset(key) {
     const request = ++fontRequest;
     if (!key) {
+        setFontLoading(false);
         fontMessage.textContent = '';
         resetDefaultFont();
         return;
     }
     const label = fontSelect.selectedOptions[0]?.textContent || key;
+    setFontLoading(true);
     fontMessage.textContent = 'Загрузка…';
     try {
         if (!fontCache.has(key)) {
@@ -51,11 +71,12 @@ async function loadFontPreset(key) {
         const parsed = fontCache.get(key);
         customFont = parsed.font;
         customWidths = parsed.widths;
-        const cyrillic = Object.keys(parsed.font).some(ch => /[а-яё]/i.test(ch));
-        fontMessage.textContent = `${parsed.count} знаков${cyrillic ? ' · кириллица' : ' · для русских букв используется встроенный почерк'}`;
+        setFontLoading(false);
         updateFontUI('Загрузить SVG');
+        updateFontCoverage();
     } catch (error) {
         if (request !== fontRequest || key !== fontSelect.value) return;
+        setFontLoading(false);
         resetDefaultFont();
         fontMessage.textContent = `${label}: ${error.message}`;
     }
