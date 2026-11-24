@@ -368,6 +368,10 @@
         </div>
 
         <div class="quick-actions">
+            <a class="btn-ui" href="math.html" style="text-decoration:none">Графики и примеры</a>
+            <button class="btn-ui" onclick="document.getElementById('docxInput').click()">Импорт DOCX</button>
+            <input id="docxInput" type="file" accept=".docx" hidden>
+
             <button class="btn-ui" id="btnToggleAir" onclick="toggleAirMoves()" title="Показать траектории холостого хода">👁 Траектории</button>
             <button class="btn-primary" onclick="downloadCurrentPageGCode()" title="Скачать G-Code (.NC)">💾 Скачать .NC</button>
         </div>
@@ -2004,5 +2008,6 @@
         document.addEventListener('change', () => saveAllSettings());
     </script>
     <script src="plotter-fonts.js?v=nc1"></script>
+    <script src="plotter-docx.js"></script>
 </body>
 </html>

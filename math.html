@@ -1,0 +1,15 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Графики и примеры · Писалка</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#10131c;color:#ecf0fa;font:16px system-ui}main{max-width:900px;margin:auto;padding:24px}a{color:#a9b5ff}label{display:block;margin:12px 0}select,button,input,textarea{font:inherit;color:inherit;background:#252d42;border:1px solid #637399;border-radius:6px;padding:8px}textarea{width:100%;min-height:100px}canvas{max-width:100%;height:auto;background:#fff;border-radius:8px;display:block;margin:16px 0}button{cursor:pointer}output{display:block;margin:12px 0;color:#d1dcf9}
+</style>
+<main>
+<a href="index.html">← Редактор текста</a>
+<h1>Графики и примеры</h1>
+<label>Тип <select id="kind"><option value="graph">График функции</option><option value="bars">Столбчатая диаграмма</option><option value="flow">Схема из блоков</option><option value="solve">Решение примера</option></select></label>
+<label><span id="hint"></span><textarea id="source" spellcheck="false"></textarea></label>
+<label>Поворот в NC <select id="rotation"><option value="90">90° вдоль Y</option><option value="0">0°</option></select></label>
+<output id="status" role="status"></output>
+<canvas width="720" height="480" aria-label="Предпросмотр рисунка"></canvas>
+<button id="download">Скачать .NC</button>
+</main><script src="plotter-math.js"></script></html>
